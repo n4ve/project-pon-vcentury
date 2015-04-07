@@ -21,6 +21,7 @@
 module GFXController_TestSuite(
     input CLK,
     input IN_PB_RESET,
+	input IN_SERIAL_RX,
     output OUT_SERIAL_TX
     );
 	
@@ -71,6 +72,22 @@ module GFXController_TestSuite(
 	assign vramAddr[15:10] = 0;
 	assign vramAddr[9:0] = ramAddr[9:0];
 		
+	reg kramEnable;
+	reg kramWrite;
+	wire [15:0] kramAddr;
+	wire [15:0] kramDataR;
+	wire [15:0] kramDataW;
+	
+	wire kIrq;
+	reg kIack;
+	reg kIend;
+	
+	KBDController kbdc(CLK, RESET, kramEnable, kramWrite, kramAddr, kramDataR, kramDataW,
+		kIrq, kIack, kIend, IN_SERIAL_RX);
+	
+	assign kramAddr = 0;
+	assign kramDataW = 0;
+		
 	reg [15:0] buffer;
 	reg resetBuffer;
 	reg loadBuffer;
@@ -84,31 +101,15 @@ module GFXController_TestSuite(
 	
 	assign vramDataW = buffer;
 	
-	reg [31:0] counter;
-	reg resetCounter;
-	reg forceCounter;
+	reg [15:0] kBuffer;
+	reg resetKBuffer;
+	reg loadKBuffer;
 	
 	always @(posedge CLK) begin
-		if (resetCounter)
-			counter <= 0;
-		else if (forceCounter)
-			counter <= 25000000;
-		else
-			counter <= counter + 1;
-	end
-	
-	reg reverse;
-	reg resetReverse;
-	reg setReverse;
-	reg toggleReverse;
-	
-	always @(posedge CLK) begin
-		if (resetReverse)
-			reverse <= 0;
-		else if (setReverse)
-			reverse <= 1;
-		else if (toggleReverse)
-			reverse <= ~reverse;
+		if (resetKBuffer)
+			kBuffer <= 0;
+		else if (loadKBuffer)
+			kBuffer <= kramDataR;
 	end
 	
 	reg resetRamAddr;
@@ -152,14 +153,12 @@ module GFXController_TestSuite(
 		ramDataIn = 0;
 		vramEnable = 0;
 		vramWrite = 0;
+		kramEnable = 0;
+		kramWrite = 0;
 		resetBuffer = 0;
 		loadBuffer = 0;
-		resetCounter = 0;
-		forceCounter = 0;
-		resetReverse = 0;
-		setReverse = 0;
-		toggleReverse = 0;
-		resetRamAddr = 0;
+		resetKBuffer = 0;
+		loadKBuffer = 0;
 		incRamAddr = 0;
 		setRamAddrFrame1 = 0;
 		setRamAddrFrame2 = 0;
@@ -169,51 +168,39 @@ module GFXController_TestSuite(
 		
 		iack = 0;
 		iend = 0;
+		kIack = 0;
+		kIend = 0;
 		
 		case (state)
 			0: begin
 				resetBuffer = 1;
-				forceCounter = 1;
-				resetReverse = 1;
 				nextState = 1;
 			end
 			
 			1: begin
-				resetReverse = 1;
 				setRamAddrFrame1 = 1;
-				nextState = 100;
+				nextState = 128;
 			end
 			
 			2: begin
 				setRamAddrFrame2 = 1;
-				nextState = 100;
+				nextState = 128;
 			end
 			
 			3: begin
 				setRamAddrFrame3 = 1;
-				nextState = 100;
+				nextState = 128;
 			end
 			
 			4: begin
-				setReverse = 1;
 				setRamAddrFrame4 = 1;
-				nextState = 100;
-			end
-			
-			100: begin
-				if (counter < 3125000)
-					nextState = 100;
-				else
-					nextState = 101;
-			end
-			
-			101: begin
-				resetCounter = 1;
 				nextState = 128;
 			end
 			
 			128: begin
-				if (irq)
+				if (kIrq)
+					nextState = 200;
+				else if (irq)
 					nextState = 129;
 				else
 					nextState = 128;
@@ -251,32 +238,37 @@ module GFXController_TestSuite(
 			
 			134: begin
 				iend = 1;
-				if (reverse)
-					nextState = 136;
-				else
-					nextState = 135;
+				nextState = recentFrame + 1;
 			end
 			
-			135: begin
-				if (recentFrame == 0)
-					nextState = 2;
-				else if (recentFrame == 1)
-					nextState = 3;
-				else if (recentFrame == 2)
-					nextState = 4;
-				else
-					nextState = 1;
+			200: begin
+				kIack = 1;
+				nextState = 201;
 			end
 			
-			136: begin
-				if (recentFrame == 3)
-					nextState = 3;
-				else if (recentFrame == 2)
-					nextState = 2;
-				else if (recentFrame == 1)
+			201: begin
+				kramEnable = 1;
+				kramWrite = 0;
+				nextState = 202;
+			end
+			
+			202: begin
+				loadKBuffer = 1;
+				nextState = 203;
+			end
+			
+			203: begin
+				kIend = 1;
+				if (kBuffer == 16'h00_31)
 					nextState = 1;
-				else
+				else if (kBuffer == 16'h00_32)
+					nextState = 2;
+				else if (kBuffer == 16'h00_33)
+					nextState = 3;
+				else if (kBuffer == 16'h00_34)
 					nextState = 4;
+				else
+					nextState = 128;
 			end
 		endcase
 	end
