@@ -26,32 +26,13 @@ module SerialReceiver(
 	output OUT_STATUS_READY
     );
 	
-	parameter CLOCKS_WAIT = 434; // baud rate 57600
-
-	reg [11:0] counterCW;
-	reg resetCounterCW;
-	reg incCounterCW;
-	always @(posedge CLK) begin
-		if (resetCounterCW)
-			counterCW <= 0;
-		else if (incCounterCW)
-			counterCW <= counterCW + 1;
-	end
-	
-	reg [3:0] counterDB;
-	reg resetCounterDB;
-	reg incCounterDB;
-	always @(posedge CLK) begin
-		if (resetCounterDB)
-			counterDB <= 0;
-		else if (incCounterDB)
-			counterDB <= counterDB + 1;
-	end
+	wire BCLK;
+	BaudClockGenerator bcg(CLK, RESET, BCLK);
 	
 	reg [7:0] temp;
 	reg resetTemp;
 	reg sampleTemp;
-	always @(posedge CLK) begin
+	always @(posedge BCLK) begin
 		if (resetTemp)
 			temp <= 0;
 		else if (sampleTemp)
@@ -61,7 +42,7 @@ module SerialReceiver(
 	reg [7:0] data;
 	reg resetData;
 	reg loadData;
-	always @(posedge CLK) begin
+	always @(posedge BCLK) begin
 		if (resetData)
 			data <= 0;
 		else if (loadData)
@@ -73,7 +54,7 @@ module SerialReceiver(
 	reg [3:0] state = 0;
 	reg [3:0] nextState = 0;
 	
-	always @(posedge CLK) begin
+	always @(posedge BCLK) begin
 		if (RESET)
 			state <= 0;
 		else
@@ -81,10 +62,6 @@ module SerialReceiver(
 	end
 	
 	always @(*) begin
-		resetCounterCW = 0;
-		incCounterCW = 0;
-		resetCounterDB = 0;
-		incCounterDB = 0;
 		resetTemp = 0;
 		sampleTemp = 0;
 		resetData = 0;
@@ -94,16 +71,12 @@ module SerialReceiver(
 		
 		case (state)
 			0: begin
-				resetCounterCW = 1;
-				resetCounterDB = 1;
 				resetTemp = 1;
 				resetData = 1;
 				nextState = 1;
 			end
 			
 			1: begin
-				resetCounterCW = 1;
-				resetCounterDB = 1;
 				resetTemp = 1;
 				ready = 1;
 				if (IN_SERIAL_RX)
@@ -113,23 +86,46 @@ module SerialReceiver(
 			end
 			
 			2: begin
-				incCounterCW = 1;
-				if (counterDB >= 8)
-					nextState = 4;
-				else if (counterCW < CLOCKS_WAIT)
-					nextState = 2;
-				else
-					nextState = 3;
+				sampleTemp = 1;
+				nextState = 3;
 			end
 			
 			3: begin
 				sampleTemp = 1;
-				incCounterDB = 1;
-				resetCounterCW = 1;
-				nextState = 2;
+				nextState = 4;
 			end
 			
 			4: begin
+				sampleTemp = 1;
+				nextState = 5;
+			end
+			
+			5: begin
+				sampleTemp = 1;
+				nextState = 6;
+			end
+			
+			6: begin
+				sampleTemp = 1;
+				nextState = 7;
+			end
+			
+			7: begin
+				sampleTemp = 1;
+				nextState = 8;
+			end
+			
+			8: begin
+				sampleTemp = 1;
+				nextState = 9;
+			end
+			
+			9: begin
+				sampleTemp = 1;
+				nextState = 10;
+			end
+			
+			10: begin
 				loadData = 1;
 				nextState = 1;
 			end

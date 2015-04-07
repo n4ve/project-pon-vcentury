@@ -27,27 +27,8 @@ module SerialTransmitter(
 	output OUT_STATUS_READY
     );
 
-	parameter CLOCKS_WAIT = 434; // baud rate 57600
-	
-	reg [11:0] counterCW;
-	reg resetCounterCW;
-	reg incCounterCW;
-	always @(posedge CLK) begin
-		if (resetCounterCW)
-			counterCW <= 0;
-		else if (incCounterCW)
-			counterCW <= counterCW + 1;
-	end
-	
-	reg [3:0] counterDB;
-	reg resetCounterDB;
-	reg incCounterDB;
-	always @(posedge CLK) begin
-		if (resetCounterDB)
-			counterDB <= 0;
-		else if (incCounterDB)
-			counterDB <= counterDB + 1;
-	end
+	wire BCLK;
+	BaudClockGenerator bcg(CLK, RESET, BCLK);
 	
 	reg [7:0] temp;
 	reg resetTemp;
@@ -62,7 +43,7 @@ module SerialTransmitter(
 	reg [3:0] state = 0;
 	reg [3:0] nextState = 0;
 	
-	always @(posedge CLK) begin
+	always @(posedge BCLK) begin
 		if (RESET)
 			state <= 0;
 		else
@@ -71,32 +52,19 @@ module SerialTransmitter(
 	
 	reg serialTx;
 	reg ready;
+	reg send;
 	
 	always @(*) begin
-		resetCounterCW = 0;
-		incCounterCW = 0;
-		resetCounterDB = 0;
-		incCounterDB = 0;
-		resetTemp = 0;
-		loadTemp = 0;
 		serialTx = 1;
-		ready = 0;
 		nextState = 0;
 		
 		case (state)
 			0: begin
-				resetCounterCW = 1;
-				resetCounterDB = 1;
-				resetTemp = 1;
 				nextState = 1;
 			end
 			
 			1: begin
-				resetCounterCW = 1;
-				resetCounterDB = 1;
-				loadTemp = 1;
-				ready = 1;
-				if (IN_SEND)
+				if (send)
 					nextState = 2;
 				else
 					nextState = 1;
@@ -104,45 +72,96 @@ module SerialTransmitter(
 			
 			2: begin
 				serialTx = 0;
-				incCounterCW = 1;
-				if (counterCW < CLOCKS_WAIT)
-					nextState = 2;
-				else
-					nextState = 3;
-			end
-			
-			3: begin
-				serialTx = 0;
-				resetCounterCW = 1;
 				nextState = 4;
 			end
 			
 			4: begin
-				serialTx = temp[counterDB];
-				incCounterCW = 1;
-				if (counterCW < CLOCKS_WAIT)
-					nextState = 4;
-				else
-					nextState = 5;
+				serialTx = temp[0];
+				nextState = 5;
 			end
 			
 			5: begin
-				serialTx = temp[counterDB];
-				resetCounterCW = 1;
-				incCounterDB = 1;
-				if (counterDB < 7)
-					nextState = 4;
-				else
-					nextState = 6;
+				serialTx = temp[1];
+				nextState = 6;
 			end
 			
 			6: begin
+				serialTx = temp[2];
+				nextState = 7;
+			end
+			
+			7: begin
+				serialTx = temp[3];
+				nextState = 8;
+			end
+			
+			8: begin
+				serialTx = temp[4];
+				nextState = 9;
+			end
+			
+			9: begin
+				serialTx = temp[5];
+				nextState = 10;
+			end
+			
+			10: begin
+				serialTx = temp[6];
+				nextState = 11;
+			end
+			
+			11: begin
+				serialTx = temp[7];
+				nextState = 12;
+			end
+			
+			12: begin
 				serialTx = 1;
-				incCounterCW = 1;
-				if (counterCW < CLOCKS_WAIT)
-					nextState = 6;
+				nextState = 1;
+			end
+		endcase
+	end
+	
+	reg [3:0] state2;
+	reg [3:0] nextState2;
+	
+	always @(posedge CLK) begin
+		if (RESET)
+			state2 <= 0;
+		else
+			state2 <= nextState2;
+	end
+	
+	always @(*) begin
+		resetTemp = 0;
+		loadTemp = 0;
+		ready = 0;
+		send = 0;
+		
+		case (state2)
+			0: begin
+				resetTemp = 1;
+				nextState2 = 1;
+			end
+			
+			1: begin
+				if (state == 1) begin
+					loadTemp = 1;
+					ready = 1;
+				end
+				
+				if (state == 1 && IN_SEND)
+					nextState2 = 2;
 				else
-					nextState = 1;
+					nextState2 = 1;
+			end
+			
+			2: begin
+				send = 1;
+				if (state == 1)
+					nextState2 = 2;
+				else
+					nextState2 = 1;
 			end
 		endcase
 	end
