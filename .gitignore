@@ -1,5 +1,7 @@
 /*
 !/*.v
 !.gitignore
+/TerminalWriter.v
+/TerminalReader.v
 /*_timesim.v
 
