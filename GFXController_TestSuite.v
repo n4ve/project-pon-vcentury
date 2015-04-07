@@ -174,6 +174,7 @@ module GFXController_TestSuite(
 		case (state)
 			0: begin
 				resetBuffer = 1;
+				resetKBuffer = 1;
 				nextState = 1;
 			end
 			

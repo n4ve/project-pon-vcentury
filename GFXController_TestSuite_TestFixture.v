@@ -27,6 +27,7 @@ module GFXController_TestSuite_TestFixture;
 	// Inputs
 	reg CLK;
 	reg IN_PB_RESET;
+	reg IN_SERIAL_RX;
 
 	// Outputs
 	wire OUT_SERIAL_TX;
@@ -35,6 +36,7 @@ module GFXController_TestSuite_TestFixture;
 	GFXController_TestSuite uut (
 		.CLK(CLK), 
 		.IN_PB_RESET(IN_PB_RESET), 
+		.IN_SERIAL_RX(IN_SERIAL_RX),
 		.OUT_SERIAL_TX(OUT_SERIAL_TX)
 	);
 	
@@ -50,6 +52,7 @@ module GFXController_TestSuite_TestFixture;
 	initial begin
 		// Initialize Inputs
 		CLK = 0;
+		IN_SERIAL_RX = 1;
 		IN_PB_RESET = 0;
 
 		// Wait 100 ns for global reset to finish
@@ -61,5 +64,6 @@ module GFXController_TestSuite_TestFixture;
 	end
 	
 	TerminalWriter twrt(CLK, ~IN_PB_RESET, OUT_SERIAL_TX);
+	//TerminalReader trdr(CLK, ~IN_PB_RESET, IN_SERIAL_RX);
 endmodule
 

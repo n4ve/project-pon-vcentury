@@ -139,6 +139,6 @@ module KBDController(
 		endcase
 	end
 	
-	assign MEMC_RAM_DATA_R = (MEMC_RAM_ENABLE) ? buffer : 16'bz;
+	assign MEMC_RAM_DATA_R = buffer;
 
 endmodule

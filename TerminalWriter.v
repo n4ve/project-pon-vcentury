@@ -24,7 +24,7 @@ module TerminalWriter(
 	input IN_SERIAL_RX
     );
 	
-	parameter filename = "/dev/pts/10";
+	parameter filename = "/dev/pts/9";
 	
 	wire [7:0] data;
 	wire ready;
@@ -89,5 +89,8 @@ module TerminalWriter(
 			end
 		endcase
 	end
+	
+	initial
+		$monitor("%h", data);
 
 endmodule
