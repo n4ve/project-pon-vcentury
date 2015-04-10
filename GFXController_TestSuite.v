@@ -76,21 +76,13 @@ module GFXController_TestSuite(
 	reg stIend;
 	SystemTimer systim(CLK, RESET, stIrq, stIack, stIend);
 		
-	reg kramEnable;
-	reg kramWrite;
-	wire [15:0] kramAddr;
-	wire [15:0] kramDataR;
-	wire [15:0] kramDataW;
+	wire [7:0] kbdBuffer;
 	
 	wire kIrq;
 	reg kIack;
 	reg kIend;
 	
-	KBDController kbdc(CLK, RESET, kramEnable, kramWrite, kramAddr, kramDataR, kramDataW,
-		kIrq, kIack, kIend, IN_SERIAL_RX);
-	
-	assign kramAddr = 0;
-	assign kramDataW = 0;
+	KBDController kbdc(CLK, RESET, kbdBuffer, kIrq, kIack, kIend, IN_SERIAL_RX);
 		
 	reg [15:0] buffer;
 	reg resetBuffer;
@@ -113,7 +105,7 @@ module GFXController_TestSuite(
 		if (resetKBuffer)
 			kBuffer <= 0;
 		else if (loadKBuffer)
-			kBuffer <= kramDataR;
+			kBuffer <= kbdBuffer;
 	end
 	
 	reg resetRamAddr;
@@ -157,8 +149,6 @@ module GFXController_TestSuite(
 		ramDataIn = 0;
 		vramEnable = 0;
 		vramWrite = 0;
-		kramEnable = 0;
-		kramWrite = 0;
 		resetBuffer = 0;
 		loadBuffer = 0;
 		resetKBuffer = 0;
@@ -259,12 +249,6 @@ module GFXController_TestSuite(
 			
 			200: begin
 				kIack = 1;
-				nextState = 201;
-			end
-			
-			201: begin
-				kramEnable = 1;
-				kramWrite = 0;
 				nextState = 202;
 			end
 			

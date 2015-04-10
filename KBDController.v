@@ -21,12 +21,8 @@
 module KBDController(
     input CLK,
     input RESET,
-	// Memory controller
-	input MEMC_RAM_ENABLE,
-	input MEMC_RAM_WRITE,
-	input [15:0] MEMC_RAM_ADDR,
-	output [15:0] MEMC_RAM_DATA_R,
-	input [15:0] MEMC_RAM_DATA_W,
+	// Keyboard buffer
+	output [7:0] KEY_BUFFER,
 	// Interrupt controller
 	output INTC_IRQ,
 	input INTC_IACK,
@@ -45,7 +41,7 @@ module KBDController(
 	/*
 	* Keybuffer
 	*/
-	reg [15:0] buffer;
+	reg [7:0] buffer;
 	reg loadBuffer;
 	reg resetBuffer;
 	
@@ -53,8 +49,7 @@ module KBDController(
 		if (resetBuffer)
 			buffer <= 0;
 		else if (loadBuffer) begin
-			buffer[15:8] <= 0;
-			buffer[7:0] <= rxData;
+			buffer <= rxData;
 		end
 	end
 	
@@ -139,6 +134,6 @@ module KBDController(
 		endcase
 	end
 	
-	assign MEMC_RAM_DATA_R = buffer;
+	assign KEY_BUFFER = buffer;
 
 endmodule
