@@ -167,20 +167,6 @@ module GPU(
 	end
 	
 	/*
-	* Border counter
-	*/
-	reg [7:0] counterBdr;
-	reg resetCounterBdr;
-	reg incCounterBdr;
-	
-	always @(posedge CLK) begin
-		if (resetCounterBdr)
-			counterBdr <= 0;
-		else if (incCounterBdr)
-			counterBdr <= counterBdr + 1;
-	end
-	
-	/*
 	* Force redraw flag
 	*/
 	reg forceRedraw;
@@ -246,8 +232,6 @@ module GPU(
 		resetVramSlvBuff = 0;
 		loadVramMstBuff = 0;
 		loadVramSlvBuff = 0;
-		resetCounterBdr = 0;
-		incCounterBdr = 0;
 		resetForceRedraw = 0;
 		setForceRedraw = 0;
 		resetVramLock = 0;
@@ -262,7 +246,6 @@ module GPU(
 				resetCursorY = 1;
 				resetVramMstBuff = 1;
 				resetVramSlvBuff = 1;
-				resetCounterBdr = 0;
 				setForceRedraw = 1;
 				resetVramLock = 1;
 				nextState = 1;
