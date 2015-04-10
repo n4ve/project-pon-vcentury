@@ -153,6 +153,7 @@ module GFXController_TestSuite(
 		loadBuffer = 0;
 		resetKBuffer = 0;
 		loadKBuffer = 0;
+		resetRamAddr = 0;
 		incRamAddr = 0;
 		setRamAddrFrame1 = 0;
 		setRamAddrFrame2 = 0;
@@ -171,6 +172,7 @@ module GFXController_TestSuite(
 			0: begin
 				resetBuffer = 1;
 				resetKBuffer = 1;
+				resetRamAddr = 1;
 				nextState = 1;
 			end
 			
