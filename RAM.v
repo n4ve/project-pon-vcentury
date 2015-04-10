@@ -22,7 +22,7 @@ module RAM(
     input CLK,
 	input RAM_ENABLE,
 	input RAM_WRITE,
-	input [11:0] RAM_ADDR,
+	input [15:0] RAM_ADDR,
 	output [15:0] RAM_DATA_OUT,
 	input [15:0] RAM_DATA_IN
     );
@@ -52,7 +52,7 @@ module RAM(
 				ramDataOut <= ram[ramAddr];
 		end
 
-	assign ramAddr = RAM_ADDR;
+	assign ramAddr = RAM_ADDR[11:0];
 	assign ramDataIn = RAM_DATA_IN;
 	assign RAM_DATA_OUT = ramDataOut;
 
