@@ -23,6 +23,7 @@ module TitleProcessor(
     input RESET,
 	input ENABLE,
 	output SWITCH_REQUEST,
+	output FATAL_ERROR,
 	// Memory controller
 	output MEM_ENABLE,
 	output MEM_WRITE,
@@ -110,6 +111,13 @@ module TitleProcessor(
 	assign SWITCH = pSwitch;
 	
 	/*
+	* Error handler
+	*/
+	reg error;
+	
+	assign FATAL_ERROR = error;
+	
+	/*
 	* Buffer
 	*/
 	reg [15:0] buffer;
@@ -147,6 +155,7 @@ module TitleProcessor(
 		iack = 0;
 		iend = 0;
 		pSwitch = 0;
+		error = 0;
 		loadBuffer = 0;
 		
 		nextState = 0;
@@ -243,7 +252,8 @@ module TitleProcessor(
 			end
 			
 			18: begin
-				nextState = 1;
+				error = 1;
+				nextState = 18;
 			end
 		endcase
 	end

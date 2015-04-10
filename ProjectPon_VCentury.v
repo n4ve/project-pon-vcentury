@@ -22,7 +22,9 @@ module ProjectPon_VCentury(
     input CLK,
     input IN_PB_RESET,
     input IN_SERIAL_RX,
-    output OUT_SERIAL_TX
+    output OUT_SERIAL_TX,
+	output OUT_LED,
+	output OUT_BUZZER
     );
 	
 	wire RESET;
@@ -100,6 +102,9 @@ module ProjectPon_VCentury(
 	wire processor0SwitchRequest;
 	wire processor1SwitchRequest;
 	
+	wire processor0FatalError;
+	wire processor1FatalError;
+	
 	/*
 	* Processor 0 (title processor)
 	*/
@@ -111,7 +116,8 @@ module ProjectPon_VCentury(
 	wire p0iack;
 	wire p0iend;
 	
-	TitleProcessor processor0(CLK, RESET, processor0Enable, processor0SwitchRequest,
+	TitleProcessor processor0(CLK, RESET,
+		processor0Enable, processor0SwitchRequest, processor0FatalError,
 		p0memEnable, p0memWrite, p0memAddr, memDataR, p0memDataW,
 		gpuReady, p0gpuDraw, kbd, irq, p0iack, p0iend);
 	
@@ -138,6 +144,11 @@ module ProjectPon_VCentury(
 	assign iend = (processorId == 1) ? p1iend : p0iend;
 	
 	/*
+	* Error handling
+	*/
+	reg error;
+	
+	/*
 	* FSM
 	*/
 	reg [1:0] state;
@@ -154,6 +165,7 @@ module ProjectPon_VCentury(
 		processorId = 0;
 		processor0Enable = 0;
 		processor1Enable = 0;
+		error = 0;
 		
 		case (state)
 			0:
@@ -162,7 +174,9 @@ module ProjectPon_VCentury(
 			1: begin
 				processorId = 0;
 				processor0Enable = 1;
-				if (processor0SwitchRequest)
+				if (processor0FatalError)
+					nextState = 3;
+				else if (processor0SwitchRequest)
 					nextState = 2;
 				else
 					nextState = 1;
@@ -171,12 +185,22 @@ module ProjectPon_VCentury(
 			2: begin
 				processorId = 1;
 				processor1Enable = 1;
-				if (processor1SwitchRequest)
+				if (processor1FatalError)
+					nextState = 3;
+				else if (processor1SwitchRequest)
 					nextState = 1;
 				else
 					nextState = 2;
 			end
+			
+			3: begin
+				error = 1;
+				nextState = 3;
+			end
 		endcase
 	end
+	
+	assign OUT_BUZZER = error;
+	assign OUT_LED = error;
 
 endmodule

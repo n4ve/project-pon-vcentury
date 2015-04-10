@@ -31,13 +31,17 @@ module ProjectPon_VCentury_TestFixture;
 
 	// Outputs
 	wire OUT_SERIAL_TX;
+	wire OUT_LED;
+	wire OUT_BUZZER;
 
 	// Instantiate the Unit Under Test (UUT)
 	ProjectPon_VCentury uut (
 		.CLK(CLK), 
 		.IN_PB_RESET(IN_PB_RESET), 
 		.IN_SERIAL_RX(IN_SERIAL_RX), 
-		.OUT_SERIAL_TX(OUT_SERIAL_TX)
+		.OUT_SERIAL_TX(OUT_SERIAL_TX),
+		.OUT_LED(OUT_LED),
+		.OUT_BUZZER(OUT_BUZZER)
 	);
 	
 	parameter PERIOD = 40;
