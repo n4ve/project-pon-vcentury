@@ -28,28 +28,35 @@ module GFXController_TestSuite(
 	wire RESET;
 	assign RESET = ~IN_PB_RESET;
 	
-	reg ramEnable;
-	reg ramWrite;
-	reg [11:0] ramAddr;
-	wire [15:0] ramDataOut;
-	reg [15:0] ramDataIn;
+	reg memEnable;
+	reg memWrite;
+	reg [15:0] memAddr;
+	wire [15:0] memDataR;
+	wire [15:0] memDataW;
 
-	RAM ram(CLK, ramEnable, ramWrite, ramAddr, ramDataOut, ramDataIn);
+	wire ramEnable;
+	wire ramWrite;
+	wire [15:0] ramAddr;
+	wire [15:0] ramDataR;
+	wire [15:0] ramDataW;
 	
-	reg vramEnable;
-	reg vramWrite;
+	wire vramEnable;
+	wire vramWrite;
 	wire [15:0] vramAddr;
 	wire [15:0] vramDataR;
 	wire [15:0] vramDataW;
+
+	MEMController memc(memEnable, memWrite, memAddr, memDataR, memDataW,
+		ramEnable, ramWrite, ramAddr, ramDataR, ramDataW,
+		vramEnable, vramWrite, vramAddr, vramDataR, vramDataW);
+
+	RAM ram(CLK, ramEnable, ramWrite, ramAddr, ramDataR, ramDataW);
 	
 	wire gpuReady;
 	reg gpuDraw;
 	
 	GFXController gfxc(CLK, RESET, vramEnable, vramWrite, vramAddr, vramDataR, vramDataW,
 		gpuReady, gpuDraw, OUT_SERIAL_TX);
-		
-	assign vramAddr[15:11] = 0;
-	assign vramAddr[10:0] = ramAddr[10:0];
 	
 	wire [1:0] irq;
 	reg iack;
@@ -72,10 +79,10 @@ module GFXController_TestSuite(
 		if (resetBuffer)
 			buffer <= 0;
 		else if (loadBuffer)
-			buffer <= ramDataOut;
+			buffer <= memDataR;
 	end
 	
-	assign vramDataW = buffer;
+	assign memDataW = buffer;
 	
 	reg [7:0] kBuffer;
 	reg resetKBuffer;
@@ -88,20 +95,23 @@ module GFXController_TestSuite(
 			kBuffer <= kbd;
 	end
 	
-	reg resetRamAddr;
-	reg incRamAddr;
-	reg setRamAddrFrame1;
-	reg setRamAddrFrame2;
+	reg resetMemAddr;
+	reg incMemAddr;
+	reg setMemAddrFrame1;
+	reg setMemAddrFrame2;
+	reg toggleMemRegion;
 	
 	always @(posedge CLK) begin
-		if (resetRamAddr)
-			ramAddr <= 0;
-		else if (incRamAddr)
-			ramAddr <= ramAddr + 1;
-		else if (setRamAddrFrame1)
-			ramAddr <= 12'b0_00000_000000;
-		else if (setRamAddrFrame2)
-			ramAddr <= 12'b1_00000_000000;
+		if (resetMemAddr)
+			memAddr <= 0;
+		else if (incMemAddr)
+			memAddr <= memAddr + 1;
+		else if (setMemAddrFrame1)
+			memAddr <= 16'h0000;
+		else if (setMemAddrFrame2)
+			memAddr <= 16'h0800;
+		else if (toggleMemRegion)
+			memAddr <= memAddr ^ 16'hA000;
 	end
 	
 	reg [7:0] state;
@@ -115,22 +125,20 @@ module GFXController_TestSuite(
 	end
 	
 	wire recentFrame;
-	assign recentFrame = ramAddr[11] - 1;
+	assign recentFrame = memAddr[11] - 1;
 	
 	always @(*) begin
-		ramEnable = 0;
-		ramWrite = 0;
-		ramDataIn = 0;
-		vramEnable = 0;
-		vramWrite = 0;
+		memEnable = 0;
+		memWrite = 0;
 		resetBuffer = 0;
 		loadBuffer = 0;
 		resetKBuffer = 0;
 		loadKBuffer = 0;
-		resetRamAddr = 0;
-		incRamAddr = 0;
-		setRamAddrFrame1 = 0;
-		setRamAddrFrame2 = 0;
+		resetMemAddr = 0;
+		incMemAddr = 0;
+		setMemAddrFrame1 = 0;
+		setMemAddrFrame2 = 0;
+		toggleMemRegion = 0;
 		nextState = 0;
 		
 		gpuDraw = 0;
@@ -142,17 +150,17 @@ module GFXController_TestSuite(
 			0: begin
 				resetBuffer = 1;
 				resetKBuffer = 1;
-				resetRamAddr = 1;
+				resetMemAddr = 1;
 				nextState = 1;
 			end
 			
 			1: begin
-				setRamAddrFrame1 = 1;
+				setMemAddrFrame1 = 1;
 				nextState = 128;
 			end
 			
 			2: begin
-				setRamAddrFrame2 = 1;
+				setMemAddrFrame2 = 1;
 				nextState = 128;
 			end
 			
@@ -174,25 +182,35 @@ module GFXController_TestSuite(
 			end
 			
 			130: begin
-				ramEnable = 1;
-				ramWrite = 0;
+				memEnable = 1;
+				memWrite = 0;
 				nextState = 131;
 			end
 			
 			131: begin
 				loadBuffer = 1;
+				nextState = 136;
+			end
+			
+			136: begin
+				toggleMemRegion = 1;
 				nextState = 132;
 			end
 			
 			132: begin
-				vramEnable = 1;
-				vramWrite = 1;
+				memEnable = 1;
+				memWrite = 1;
+				nextState = 137;
+			end
+			
+			137: begin
+				toggleMemRegion = 1;
 				nextState = 133;
 			end
 			
 			133: begin
-				incRamAddr = 1;
-				if (ramAddr[10:0] < 11'b11111_111111)
+				incMemAddr = 1;
+				if (memAddr[10:0] < 11'b11111_111111)
 					nextState = 130;
 				else
 					nextState = 134;
