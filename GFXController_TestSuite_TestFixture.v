@@ -68,6 +68,7 @@ module GFXController_TestSuite_TestFixture;
 	BaudClockGenerator bcg(CLK, ~IN_PB_RESET, BCLK);
 	
 	TerminalWriter twrt(CLK, ~IN_PB_RESET, OUT_SERIAL_TX);
+	//assign IN_SERIAL_RX = 1;
 	TerminalReader trdr(CLK, ~IN_PB_RESET, IN_SERIAL_RX);
 endmodule
 
