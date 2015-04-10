@@ -913,7 +913,7 @@ module GPU(
 			*/
 			63: begin
 				incVramAddr = 1;
-				if (vramAddr < 11'b11111_111111)
+				if (vramAddr < 11'h4FF)
 					nextState = 9;
 				else
 					nextState = 64;

@@ -4,15 +4,15 @@
 // Company: 
 // Engineer:
 //
-// Create Date:   20:58:56 03/30/2015
-// Design Name:   GFXController_TestSuite
-// Module Name:   /home/xerodotc/ISE Projects/ProjectPon_VCentury/GFXController_TestSuite_TestFixture.v
+// Create Date:   00:11:12 04/11/2015
+// Design Name:   ProjectPon_VCentury
+// Module Name:   /home/xerodotc/ISE Projects/ProjectPon_VCentury/ProjectPon_VCentury_TestFixture.v
 // Project Name:  ProjectPon_VCentury
 // Target Device:  
 // Tool versions:  
 // Description: 
 //
-// Verilog Test Fixture created by ISE for module: GFXController_TestSuite
+// Verilog Test Fixture created by ISE for module: ProjectPon_VCentury
 //
 // Dependencies:
 // 
@@ -22,23 +22,21 @@
 // 
 ////////////////////////////////////////////////////////////////////////////////
 
-module GFXController_TestSuite_TestFixture;
+module ProjectPon_VCentury_TestFixture;
 
 	// Inputs
 	reg CLK;
 	reg IN_PB_RESET;
-	//reg IN_SERIAL_RX;
 	wire IN_SERIAL_RX;
 
 	// Outputs
 	wire OUT_SERIAL_TX;
-	wire BCLK;
 
 	// Instantiate the Unit Under Test (UUT)
-	GFXController_TestSuite uut (
+	ProjectPon_VCentury uut (
 		.CLK(CLK), 
 		.IN_PB_RESET(IN_PB_RESET), 
-		.IN_SERIAL_RX(IN_SERIAL_RX),
+		.IN_SERIAL_RX(IN_SERIAL_RX), 
 		.OUT_SERIAL_TX(OUT_SERIAL_TX)
 	);
 	
@@ -54,7 +52,6 @@ module GFXController_TestSuite_TestFixture;
 	initial begin
 		// Initialize Inputs
 		CLK = 0;
-		//IN_SERIAL_RX = 1;
 		IN_PB_RESET = 0;
 
 		// Wait 100 ns for global reset to finish
@@ -65,10 +62,9 @@ module GFXController_TestSuite_TestFixture;
 
 	end
 	
-	BaudClockGenerator bcg(CLK, ~IN_PB_RESET, BCLK);
-	
 	TerminalWriter twrt(CLK, ~IN_PB_RESET, OUT_SERIAL_TX);
 	//assign IN_SERIAL_RX = 1;
 	TerminalReader trdr(CLK, ~IN_PB_RESET, IN_SERIAL_RX);
+      
 endmodule
 
