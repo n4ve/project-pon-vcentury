@@ -30,31 +30,11 @@ module GFXController_TestSuite(
 	
 	reg ramEnable;
 	reg ramWrite;
-	
-	parameter RAM_WIDTH = 16;
-	parameter RAM_ADDR_BITS = 12;
+	reg [11:0] ramAddr;
+	wire [15:0] ramDataOut;
+	reg [15:0] ramDataIn;
 
-	(* RAM_STYLE="{AUTO | BLOCK |  BLOCK_POWER1 | BLOCK_POWER2}" *)
-	reg [RAM_WIDTH-1:0] ram [(2**RAM_ADDR_BITS)-1:0];
-	reg [RAM_WIDTH-1:0] ramDataOut;
-
-	reg [RAM_ADDR_BITS-1:0] ramAddr;
-	reg [RAM_WIDTH-1:0] ramDataIn;
-
-	//  The following code is only necessary if you wish to initialize the RAM 
-	//  contents via an external file (use $readmemb for binary data)
-	initial
-		$readmemh("/home/xerodotc/NepgearRam.txt", ram, 12'h000, 12'hFFF);
-
-	always @(posedge CLK)
-		if (ramEnable) begin
-			if (ramWrite) begin
-				ram[ramAddr] <= ramDataIn;
-				ramDataOut <= ramDataIn;
-			end
-			else
-				ramDataOut <= ram[ramAddr];
-		end
+	RAM ram(CLK, ramEnable, ramWrite, ramAddr, ramDataOut, ramDataIn);
 	
 	reg vramEnable;
 	reg vramWrite;
