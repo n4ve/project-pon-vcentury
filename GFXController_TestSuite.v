@@ -97,7 +97,7 @@ module GFXController_TestSuite(
 	
 	assign vramDataW = buffer;
 	
-	reg [15:0] kBuffer;
+	reg [7:0] kBuffer;
 	reg resetKBuffer;
 	reg loadKBuffer;
 	
