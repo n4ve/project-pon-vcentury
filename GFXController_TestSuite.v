@@ -70,6 +70,11 @@ module GFXController_TestSuite(
 		
 	assign vramAddr[15:10] = 0;
 	assign vramAddr[9:0] = ramAddr[9:0];
+	
+	wire stIrq;
+	reg stIack;
+	reg stIend;
+	SystemTimer systim(CLK, RESET, stIrq, stIack, stIend);
 		
 	reg kramEnable;
 	reg kramWrite;
@@ -167,6 +172,8 @@ module GFXController_TestSuite(
 		
 		gpuDraw = 0;
 		
+		stIack = 0;
+		stIend = 0;
 		kIack = 0;
 		kIend = 0;
 		
@@ -198,12 +205,20 @@ module GFXController_TestSuite(
 			end
 			
 			128: begin
-				if (kIrq)
+				if (stIrq)
+					nextState = 129;
+				else if (kIrq)
 					nextState = 200;
-				else if (gpuReady)
-					nextState = 130;
 				else
 					nextState = 128;
+			end
+			
+			129: begin
+				stIack = 1;
+				if (gpuReady)
+					nextState = 130;
+				else
+					nextState = 135;
 			end
 			
 			130: begin
@@ -232,8 +247,14 @@ module GFXController_TestSuite(
 			end
 			
 			134: begin
+				stIend = 1;
 				gpuDraw = 1;
 				nextState = recentFrame + 1;
+			end
+			
+			135: begin
+				stIend = 1;
+				nextState = 128;
 			end
 			
 			200: begin
