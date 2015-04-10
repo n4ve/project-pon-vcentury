@@ -44,7 +44,7 @@ module GFXController_TestSuite(
 	//  The following code is only necessary if you wish to initialize the RAM 
 	//  contents via an external file (use $readmemb for binary data)
 	initial
-		$readmemh("/home/xerodotc/NepgearRam.txt", ram, 12'h000, 12'hFFF);
+		$readmemh("/home/xerodotc/Documents/NepgearRam.txt", ram, 12'h000, 12'hFFF);
 
 	always @(posedge CLK)
 		if (ramEnable) begin
@@ -62,12 +62,11 @@ module GFXController_TestSuite(
 	wire [15:0] vramDataR;
 	wire [15:0] vramDataW;
 	
-	wire irq;
-	reg iack;
-	reg iend;
+	wire gpuReady;
+	reg gpuDraw;
 	
 	GFXController gfxc(CLK, RESET, vramEnable, vramWrite, vramAddr, vramDataR, vramDataW,
-		irq, iack, iend, OUT_SERIAL_TX);
+		gpuReady, gpuDraw, OUT_SERIAL_TX);
 		
 	assign vramAddr[15:10] = 0;
 	assign vramAddr[9:0] = ramAddr[9:0];
@@ -166,8 +165,8 @@ module GFXController_TestSuite(
 		setRamAddrFrame4 = 0;
 		nextState = 0;
 		
-		iack = 0;
-		iend = 0;
+		gpuDraw = 0;
+		
 		kIack = 0;
 		kIend = 0;
 		
@@ -201,15 +200,10 @@ module GFXController_TestSuite(
 			128: begin
 				if (kIrq)
 					nextState = 200;
-				else if (irq)
-					nextState = 129;
+				else if (gpuReady)
+					nextState = 130;
 				else
 					nextState = 128;
-			end
-			
-			129: begin
-				iack = 1;
-				nextState = 130;
 			end
 			
 			130: begin
@@ -238,7 +232,7 @@ module GFXController_TestSuite(
 			end
 			
 			134: begin
-				iend = 1;
+				gpuDraw = 1;
 				nextState = recentFrame + 1;
 			end
 			

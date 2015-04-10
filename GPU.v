@@ -28,10 +28,9 @@ module GPU(
 	input [15:0] VRAM_DATA_R,
 	output [15:0] VRAM_DATA_W,
 	output VRAM_LOCK,
-	// Interrupt
-	output INT_IRQ,
-	input INT_IACK,
-	input INT_IEND,
+	// GPU Signals
+	output SIG_READY,
+	input SIG_DRAW,
 	// Frontend
 	output OUT_SERIAL_TX
     );
@@ -65,15 +64,13 @@ module GPU(
 	VRAM vramSlave(CLK, vramSlvCs, vramSlvWr, vramSlvAddr, vramSlvDataR, vramSlvDataW);
 	
 	/*
-	* Interrupt
+	* GPU Signals
 	*/
-	reg irq;
-	wire iack;
-	wire iend;
+	reg gpuReady;
+	wire gpuDraw;
 	
-	assign INT_IRQ = irq;
-	assign iack = INT_IACK;
-	assign iend = INT_IEND;
+	assign SIG_READY = gpuReady;
+	assign gpuDraw = SIG_DRAW;
 	
 	/*
 	* Serial transmitter
@@ -82,20 +79,6 @@ module GPU(
 	reg txSend;
 	wire txReady;
 	SerialTransmitter stx(CLK, RESET, txData, txSend, OUT_SERIAL_TX, txReady);
-	
-	/*
-	* Refresh clock counter
-	*/
-	reg [31:0] counterRfh;
-	reg resetCounterRfh;
-	parameter [31:0] CLOCKS_PER_REFRESH = 500000;
-	
-	always @(posedge CLK) begin
-		if (resetCounterRfh)
-			counterRfh <= 0;
-		else
-			counterRfh <= counterRfh + 1;
-	end
 	
 	/*
 	* Address
@@ -248,12 +231,11 @@ module GPU(
 		vramSlvWr = 0;
 		vramSlvDataW = 0;
 		
-		irq = 0;
+		gpuReady = 0;
 		
 		txData = 0;
 		txSend = 0;
 		
-		resetCounterRfh = 0;
 		resetVramAddr = 0;
 		incVramAddr = 0;
 		resetCursorX = 0;
@@ -275,7 +257,6 @@ module GPU(
 	
 		case (state)
 			0: begin
-				resetCounterRfh = 1;
 				resetVramAddr = 1;
 				resetCursorX = 1;
 				resetCursorY = 1;
@@ -287,32 +268,12 @@ module GPU(
 				nextState = 1;
 			end
 				
-			1: begin // Wait for refresh time
-				if (counterRfh < CLOCKS_PER_REFRESH)
-					nextState = 1;
-				else begin
-					nextState = 2;
-				end
-			end
-			
-			2: begin // Reset refresh counter
-				resetCounterRfh = 1;
-				nextState = 3;
-			end
-			
-			3: begin // Raise interrupt
-				irq = 1;
-				if (iack)
-					nextState = 4;
-				else
-					nextState = 3;
-			end
-			
-			4: begin // Wait for interrupt handler to finish
-				if (iend)
+			1: begin // Wait for draw signal
+				gpuReady = 1;
+				if (gpuDraw)
 					nextState = 5;
 				else
-					nextState = 4;
+					nextState = 1;
 			end
 			
 			5: begin // Acquire VRAM lock

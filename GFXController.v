@@ -27,10 +27,9 @@ module GFXController(
 	input [15:0] MEMC_RAM_ADDR,
 	output [15:0] MEMC_RAM_DATA_R,
 	input [15:0] MEMC_RAM_DATA_W,
-	// Interrupt controller
-	output INTC_IRQ,
-	input INTC_IACK,
-	input INTC_IEND,
+	// GPU Signals
+	output SIG_READY,
+	input SIG_DRAW,
 	// Frontend
 	output OUT_SERIAL_TX
     );
@@ -44,7 +43,7 @@ module GFXController(
 	
 	GPU gpu(CLK, RESET, gpuVramEnable, gpuVramWrite, gpuVramAddr,
 		gpuVramDataR, gpuVramDataW, gpuVramLock,
-		INTC_IRQ, INTC_IACK, INTC_IEND, OUT_SERIAL_TX);
+		SIG_READY, SIG_DRAW, OUT_SERIAL_TX);
 	
 	wire vramEnable;
 	wire vramWrite;
