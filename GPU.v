@@ -24,7 +24,7 @@ module GPU(
 	// VRAM (master)
 	output VRAM_ENABLE,
 	output VRAM_WRITE,
-	output [9:0] VRAM_ADDR,
+	output [10:0] VRAM_ADDR,
 	input [15:0] VRAM_DATA_R,
 	output [15:0] VRAM_DATA_W,
 	output VRAM_LOCK,
@@ -40,7 +40,7 @@ module GPU(
 	*/
 	reg vramMstCs;
 	reg vramMstWr;
-	wire [9:0] vramMstAddr;
+	wire [10:0] vramMstAddr;
 	wire [15:0] vramMstDataR;
 	reg [15:0] vramMstDataW;
 	wire vramMstLock;
@@ -57,7 +57,7 @@ module GPU(
 	*/
 	reg vramSlvCs;
 	reg vramSlvWr;
-	wire [9:0] vramSlvAddr;
+	wire [10:0] vramSlvAddr;
 	wire [15:0] vramSlvDataR;
 	reg [15:0] vramSlvDataW;
 	
@@ -83,7 +83,7 @@ module GPU(
 	/*
 	* Address
 	*/
-	reg [9:0] vramAddr;
+	reg [10:0] vramAddr;
 	reg resetVramAddr;
 	reg incVramAddr;
 	
@@ -109,8 +109,8 @@ module GPU(
 	reg incCursorX;
 	reg incCursorY;
 	
-	parameter [3:0] OFFSET_Y = 5;
-	parameter [3:0] OFFSET_X = 9;
+	parameter [3:0] OFFSET_Y = 1;
+	parameter [3:0] OFFSET_X = 1;
 	
 	always @(posedge CLK) begin
 		if (resetCursorX) begin
@@ -913,7 +913,7 @@ module GPU(
 			*/
 			63: begin
 				incVramAddr = 1;
-				if (vramAddr < 10'b11111_11111)
+				if (vramAddr < 11'b11111_111111)
 					nextState = 9;
 				else
 					nextState = 64;

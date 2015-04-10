@@ -22,13 +22,13 @@ module VRAM(
 	input CLK,
 	input RAM_ENABLE,
 	input RAM_WRITE,
-	input [9:0] RAM_ADDR,
+	input [10:0] RAM_ADDR,
 	output [15:0] RAM_DATA_OUT,
 	input [15:0] RAM_DATA_IN
     );
 
 	parameter RAM_WIDTH = 16;
-	parameter RAM_ADDR_BITS = 10;
+	parameter RAM_ADDR_BITS = 11;
 	
 	(* RAM_STYLE="{AUTO | BLOCK |  BLOCK_POWER1 | BLOCK_POWER2}" *)
 	reg [RAM_WIDTH-1:0] vram [(2**RAM_ADDR_BITS)-1:0];

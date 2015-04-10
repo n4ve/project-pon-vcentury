@@ -36,7 +36,7 @@ module GFXController(
 	
 	wire gpuVramEnable;
 	wire gpuVramWrite;
-	wire [9:0] gpuVramAddr;
+	wire [10:0] gpuVramAddr;
 	wire [15:0] gpuVramDataR;
 	wire [15:0] gpuVramDataW;
 	wire gpuVramLock;
@@ -47,13 +47,13 @@ module GFXController(
 	
 	wire vramEnable;
 	wire vramWrite;
-	wire [9:0] vramAddr;
+	wire [10:0] vramAddr;
 	wire [15:0] vramDataR;
 	wire [15:0] vramDataW;
 	
 	assign vramEnable = (gpuVramLock) ? gpuVramEnable : MEMC_RAM_ENABLE;
 	assign vramWrite = (gpuVramLock) ? gpuVramWrite : MEMC_RAM_WRITE;
-	assign vramAddr = (gpuVramLock) ? gpuVramAddr : MEMC_RAM_ADDR[9:0];
+	assign vramAddr = (gpuVramLock) ? gpuVramAddr : MEMC_RAM_ADDR[10:0];
 	assign vramDataW = (gpuVramLock) ? gpuVramDataW : MEMC_RAM_DATA_W;
 	
 	assign gpuVramDataR = (gpuVramLock) ? vramDataR : 16'bz;
