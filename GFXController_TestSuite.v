@@ -71,18 +71,18 @@ module GFXController_TestSuite(
 	assign vramAddr[15:11] = 0;
 	assign vramAddr[10:0] = ramAddr[10:0];
 	
-	wire stIrq;
-	reg stIack;
-	reg stIend;
-	SystemTimer systim(CLK, RESET, stIrq, stIack, stIend);
+	wire [1:0] irq;
+	reg iack;
+	reg iend;
+	wire [0:1] pIrq;
+	wire [0:1] pIack;
+	wire [0:1] pIend;
+	
+	INTController intc(CLK, RESET, irq, iack, iend, pIrq, pIack, pIend);
+	SystemTimer systim(CLK, RESET, pIrq[0], pIack[0], pIend[0]);
 		
-	wire [7:0] kbdBuffer;
-	
-	wire kIrq;
-	reg kIack;
-	reg kIend;
-	
-	KBDController kbdc(CLK, RESET, kbdBuffer, kIrq, kIack, kIend, IN_SERIAL_RX);
+	wire [7:0] kbd;
+	KBDController kbdc(CLK, RESET, kbd, pIrq[1], pIack[1], pIend[1], IN_SERIAL_RX);
 		
 	reg [15:0] buffer;
 	reg resetBuffer;
@@ -105,7 +105,7 @@ module GFXController_TestSuite(
 		if (resetKBuffer)
 			kBuffer <= 0;
 		else if (loadKBuffer)
-			kBuffer <= kbdBuffer;
+			kBuffer <= kbd;
 	end
 	
 	reg resetRamAddr;
@@ -155,10 +155,8 @@ module GFXController_TestSuite(
 		
 		gpuDraw = 0;
 		
-		stIack = 0;
-		stIend = 0;
-		kIack = 0;
-		kIend = 0;
+		iack = 0;
+		iend = 0;
 		
 		case (state)
 			0: begin
@@ -179,16 +177,16 @@ module GFXController_TestSuite(
 			end
 			
 			128: begin
-				if (stIrq)
+				if (irq == 0)
 					nextState = 129;
-				else if (kIrq)
+				else if (irq == 1)
 					nextState = 200;
 				else
 					nextState = 128;
 			end
 			
 			129: begin
-				stIack = 1;
+				iack = 1;
 				if (gpuReady)
 					nextState = 130;
 				else
@@ -221,18 +219,18 @@ module GFXController_TestSuite(
 			end
 			
 			134: begin
-				stIend = 1;
+				iend = 1;
 				gpuDraw = 1;
 				nextState = recentFrame + 1;
 			end
 			
 			135: begin
-				stIend = 1;
+				iend = 1;
 				nextState = 128;
 			end
 			
 			200: begin
-				kIack = 1;
+				iack = 1;
 				nextState = 202;
 			end
 			
@@ -242,7 +240,7 @@ module GFXController_TestSuite(
 			end
 			
 			203: begin
-				kIend = 1;
+				iend = 1;
 				if (kBuffer == 16'h00_31)
 					nextState = 1;
 				else if (kBuffer == 16'h00_32)
