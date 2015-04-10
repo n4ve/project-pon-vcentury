@@ -111,6 +111,10 @@ module ProjectPon_VCentury(
 	wire p0iack;
 	wire p0iend;
 	
+	TitleProcessor processor0(CLK, RESET, processor0Enable, processor0SwitchRequest,
+		p0memEnable, p0memWrite, p0memAddr, memDataR, p0memDataW,
+		gpuReady, p0gpuDraw, kbd, irq, p0iack, p0iend);
+	
 	/*
 	* Processor 1 (game processor)
 	*/
