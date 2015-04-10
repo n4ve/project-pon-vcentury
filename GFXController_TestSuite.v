@@ -44,7 +44,7 @@ module GFXController_TestSuite(
 	//  The following code is only necessary if you wish to initialize the RAM 
 	//  contents via an external file (use $readmemb for binary data)
 	initial
-		$readmemh("/home/xerodotc/Documents/NepgearRam.txt", ram, 12'h000, 12'hFFF);
+		$readmemh("/home/xerodotc/NepgearRam.txt", ram, 12'h000, 12'hFFF);
 
 	always @(posedge CLK)
 		if (ramEnable) begin
@@ -68,8 +68,8 @@ module GFXController_TestSuite(
 	GFXController gfxc(CLK, RESET, vramEnable, vramWrite, vramAddr, vramDataR, vramDataW,
 		gpuReady, gpuDraw, OUT_SERIAL_TX);
 		
-	assign vramAddr[15:10] = 0;
-	assign vramAddr[9:0] = ramAddr[9:0];
+	assign vramAddr[15:11] = 0;
+	assign vramAddr[10:0] = ramAddr[10:0];
 	
 	wire stIrq;
 	reg stIack;
@@ -112,8 +112,6 @@ module GFXController_TestSuite(
 	reg incRamAddr;
 	reg setRamAddrFrame1;
 	reg setRamAddrFrame2;
-	reg setRamAddrFrame3;
-	reg setRamAddrFrame4;
 	
 	always @(posedge CLK) begin
 		if (resetRamAddr)
@@ -121,13 +119,9 @@ module GFXController_TestSuite(
 		else if (incRamAddr)
 			ramAddr <= ramAddr + 1;
 		else if (setRamAddrFrame1)
-			ramAddr <= 12'b00_00000_00000;
+			ramAddr <= 12'b0_00000_000000;
 		else if (setRamAddrFrame2)
-			ramAddr <= 12'b01_00000_00000;
-		else if (setRamAddrFrame3)
-			ramAddr <= 12'b10_00000_00000;
-		else if (setRamAddrFrame4)
-			ramAddr <= 12'b11_00000_00000;
+			ramAddr <= 12'b1_00000_000000;
 	end
 	
 	reg [7:0] state;
@@ -140,8 +134,8 @@ module GFXController_TestSuite(
 			state <= nextState;
 	end
 	
-	wire [1:0] recentFrame;
-	assign recentFrame = (ramAddr[11:10] - 1);
+	wire recentFrame;
+	assign recentFrame = ramAddr[11] - 1;
 	
 	always @(*) begin
 		ramEnable = 0;
@@ -157,8 +151,6 @@ module GFXController_TestSuite(
 		incRamAddr = 0;
 		setRamAddrFrame1 = 0;
 		setRamAddrFrame2 = 0;
-		setRamAddrFrame3 = 0;
-		setRamAddrFrame4 = 0;
 		nextState = 0;
 		
 		gpuDraw = 0;
@@ -183,16 +175,6 @@ module GFXController_TestSuite(
 			
 			2: begin
 				setRamAddrFrame2 = 1;
-				nextState = 128;
-			end
-			
-			3: begin
-				setRamAddrFrame3 = 1;
-				nextState = 128;
-			end
-			
-			4: begin
-				setRamAddrFrame4 = 1;
 				nextState = 128;
 			end
 			
@@ -232,7 +214,7 @@ module GFXController_TestSuite(
 			
 			133: begin
 				incRamAddr = 1;
-				if (ramAddr[9:0] < 10'b11111_11111)
+				if (ramAddr[10:0] < 11'b11111_111111)
 					nextState = 130;
 				else
 					nextState = 134;
@@ -265,10 +247,6 @@ module GFXController_TestSuite(
 					nextState = 1;
 				else if (kBuffer == 16'h00_32)
 					nextState = 2;
-				else if (kBuffer == 16'h00_33)
-					nextState = 3;
-				else if (kBuffer == 16'h00_34)
-					nextState = 4;
 				else
 					nextState = 128;
 			end
