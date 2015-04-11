@@ -99,7 +99,7 @@ module GameProcessor(
 	*/
 	reg pSwitch;
 	
-	assign SWITCH = pSwitch;
+	assign SWITCH_REQUEST = pSwitch;
 	
 	/*
 	* Error handler
