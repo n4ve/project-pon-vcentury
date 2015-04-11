@@ -121,14 +121,45 @@ module TitleProcessor(
 	* Buffer
 	*/
 	reg [15:0] buffer;
+	reg resetBuffer;
 	reg loadBuffer;
 	
 	always @(posedge CLK) begin
-		if (loadBuffer)
+		if (resetBuffer)
+			buffer <= 0;
+		else if (loadBuffer)
 			buffer <= memDataR;
 	end
 	
 	assign memDataW = buffer;
+	
+	/*
+	* Blink counter
+	*/
+	reg [7:0] counter;
+	reg resetCounter;
+	reg incCounter;
+	
+	always @(posedge CLK) begin
+		if (resetCounter)
+			counter <= 0;
+		else if (incCounter)
+			counter <= counter + 1;
+	end
+	
+	/*
+	* Text visible state
+	*/
+	reg textVisible;
+	reg resetTextVisible;
+	reg toggleTextVisible;
+	
+	always @(posedge CLK) begin
+		if (resetTextVisible)
+			textVisible <= 0;
+		else if (toggleTextVisible)
+			textVisible <= ~textVisible;
+	end
 	
 	/*
 	* FSM
@@ -156,13 +187,21 @@ module TitleProcessor(
 		iend = 0;
 		pSwitch = 0;
 		error = 0;
+		resetBuffer = 0;
 		loadBuffer = 0;
+		resetCounter = 0;
+		incCounter = 0;
+		resetTextVisible = 0;
+		toggleTextVisible = 0;
 		
 		nextState = 0;
 		
 		case (state)
 			0: begin
+				resetBuffer = 1;
+				resetCounter = 1;
 				resetMemAddr = 1;
+				resetTextVisible = 1;
 				nextState = 1;
 			end
 			
@@ -175,13 +214,33 @@ module TitleProcessor(
 				if (irq == 0)
 					nextState = 3;
 				else if (irq == 1)
-					nextState = 16;
+					nextState = 24;
 				else
 					nextState = 2;
 			end
 			
 			3: begin
 				iack = 1;
+				nextState = 16;
+			end
+			
+			16: begin
+				incCounter = 1;
+				if (counter == 0)
+					nextState = 17;
+				else if (counter < 24)
+					nextState = 4;
+				else
+					nextState = 18;
+			end
+			
+			17: begin
+				toggleTextVisible = 1;
+				nextState = 4;
+			end
+			
+			18: begin
+				resetCounter = 1;
 				nextState = 4;
 			end
 			
@@ -205,6 +264,12 @@ module TitleProcessor(
 			
 			7: begin
 				toggleMemRegion = 1;
+				nextState = 13;
+			end
+			
+			13: begin
+				if (buffer[10:8] == 3'b001 && !textVisible)
+					resetBuffer = 1;
 				nextState = 8;
 			end
 			
@@ -237,23 +302,23 @@ module TitleProcessor(
 				nextState = 1;
 			end
 			
-			16: begin
+			24: begin
 				iack = 1;
 				loadKBuffer = 1;
-				nextState = 17;
+				nextState = 25;
 			end
 			
-			17: begin
+			25: begin
 				iend = 1;
 				if (kBuffer == 8'h20)
-					nextState = 18;
+					nextState = 26;
 				else
 					nextState = 1;
 			end
 			
-			18: begin
+			26: begin
 				error = 1;
-				nextState = 18;
+				nextState = 26;
 			end
 		endcase
 	end
