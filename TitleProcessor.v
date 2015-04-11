@@ -194,7 +194,7 @@ module TitleProcessor(
 		resetTextVisible = 0;
 		toggleTextVisible = 0;
 		
-		nextState = 0;
+		nextState = 31;
 		
 		case (state)
 			0: begin
@@ -319,6 +319,11 @@ module TitleProcessor(
 			26: begin
 				pSwitch = 1;
 				nextState = 26;
+			end
+			
+			31: begin
+				error = 1;
+				nextState = 31;
 			end
 		endcase
 	end

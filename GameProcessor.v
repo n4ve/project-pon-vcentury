@@ -185,7 +185,7 @@ module GameProcessor(
 		incCounter = 0;
 		decCounter = 0;
 		
-		nextState = 16'h0000;
+		nextState = 16'hFFFF;
 		
 		case (state)
 			16'h0000: begin
@@ -196,6 +196,11 @@ module GameProcessor(
 			16'h0001: begin
 				error = 1;
 				nextState = 16'h0001;
+			end
+			
+			16'hFFFF: begin
+				error = 1;
+				nextState = 16'hFFFF;
 			end
 		endcase
 	end
