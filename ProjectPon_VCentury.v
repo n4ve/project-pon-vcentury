@@ -132,6 +132,11 @@ module ProjectPon_VCentury(
 	wire p1iack;
 	wire p1iend;
 	
+	GameProcessor processor1(CLK, RESET,
+		processor1Enable, processor1SwitchRequest, processor1FatalError,
+		p1memEnable, p1memWrite, p1memAddr, memDataR, p1memDataW,
+		gpuReady, p1gpuDraw, kbd, irq, p1iack, p1iend);
+	
 	/*
 	* Assignment
 	*/
