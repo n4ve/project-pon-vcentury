@@ -134,6 +134,23 @@ module GameProcessor(
 	assign FATAL_ERROR = error;
 	
 	/*
+	* General purpose counter
+	*/
+	reg [15:0] counter;
+	reg resetCounter;
+	reg incCounter;
+	reg decCounter;
+	
+	always @(posedge CLK) begin
+		if (resetCounter)
+			counter <= 0;
+		else if (incCounter)
+			counter <= counter + 1;
+		else if (decCounter)
+			counter <= counter - 1;
+	end
+	
+	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -164,10 +181,15 @@ module GameProcessor(
 		loadBufferMem = 0;
 		loadBufferLine = 0;
 		
+		resetCounter = 0;
+		incCounter = 0;
+		decCounter = 0;
+		
 		nextState = 16'h0000;
 		
 		case (state)
 			16'h0000: begin
+				resetCounter = 1;
 				nextState = 16'h0001;
 			end
 			
