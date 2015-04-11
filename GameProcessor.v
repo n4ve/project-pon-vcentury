@@ -151,6 +151,31 @@ module GameProcessor(
 	end
 	
 	/*
+	* Keystroke queue
+	*/
+	reg [3:0] keyQueueFront;
+	reg [3:0] keyQueueBack;
+	
+	reg resetKeyQueue;
+	reg pushKeyQueue;
+	reg popKeyQueue;
+	
+	always @(posedge CLK) begin
+		if (resetKeyQueue) begin
+			keyQueueFront <= 0;
+			keyQueueBack <= 0;
+		end
+		else if (pushKeyQueue) begin
+			keyQueueBack <= keyQueueBack + 1;
+		end
+		else if (popKeyQueue) begin
+			keyQueueFront <= keyQueueFront + 1;
+		end
+	end
+	
+	parameter KEYQUEUE_ADDR = 16'h0000;
+	
+	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -185,19 +210,68 @@ module GameProcessor(
 		incCounter = 0;
 		decCounter = 0;
 		
+		resetKeyQueue = 0;
+		pushKeyQueue = 0;
+		popKeyQueue = 0;
+		
 		nextState = 16'hFFFF;
 		
 		case (state)
+			/*
+			* Reset state
+			*/
 			16'h0000: begin
 				resetCounter = 1;
+				resetKeyQueue = 1;
 				nextState = 16'h0001;
 			end
 			
+			/*
+			* Wait for interrupt state
+			*/
 			16'h0001: begin
-				error = 1;
+				if (irq == 1)
+					nextState = 16'h0002;
+				else
+					nextState = 16'h0001;
+			end
+			
+			/*
+			* Keyboard interrupt handler
+			*/
+			16'h0002: begin
+				iack = 1;
+				nextState = 16'h0003;
+			end
+			
+			16'h0003: begin
+				loadKeyBuffer = 1;
+				nextState = 16'h0004;
+			end
+			
+			16'h0004: begin
+				dataLine = keyBuffer;
+				addrLine = KEYQUEUE_ADDR + keyQueueBack;
+				loadBufferLine = 1;
+				loadAddr = 1;
+				nextState = 16'h0005;
+			end
+			
+			16'h0005: begin
+				memEnable = 1;
+				memWrite = 1;
+				pushKeyQueue = 1;
+				nextState = 16'h0006;
+			end
+			
+			16'h0006: begin
+				iend = 1;
 				nextState = 16'h0001;
 			end
 			
+			/*
+			* Error state
+			*/
 			16'hFFFF: begin
 				error = 1;
 				nextState = 16'hFFFF;
