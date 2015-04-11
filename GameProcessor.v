@@ -151,6 +151,23 @@ module GameProcessor(
 	end
 	
 	/*
+	* Object ID counter
+	*/
+	reg [3:0] objectId;
+	reg resetObjectId;
+	reg incObjectId;
+	reg decObjectId;
+	
+	always @(posedge CLK) begin
+		if (resetObjectId)
+			objectId <= 0;
+		else if (incObjectId)
+			objectId <= objectId + 1;
+		else if (decObjectId)
+			objectId <= objectId - 1;
+	end
+	
+	/*
 	* Keystroke queue
 	*/
 	reg [3:0] keyQueueFront;
@@ -176,6 +193,48 @@ module GameProcessor(
 	parameter KEYQUEUE_ADDR = 16'h0000;
 	
 	/*
+	* Left paddle
+	*/
+	reg [5:0] leftPaddlePos;
+	reg leftPaddleReset;
+	reg leftPaddleUp;
+	reg leftPaddleDown;
+	
+	always @(posedge CLK) begin
+		if (leftPaddleReset)
+			leftPaddlePos <= 9;
+		else if (leftPaddleUp) begin
+			if (leftPaddlePos > 2)
+				leftPaddlePos <= leftPaddlePos - 1;
+		end
+		else if (leftPaddleDown) begin
+			if (leftPaddlePos < 16)
+				leftPaddlePos <= leftPaddlePos + 1;
+		end
+	end
+	
+	/*
+	* Right paddle
+	*/
+	reg [5:0] rightPaddlePos;
+	reg rightPaddleReset;
+	reg rightPaddleUp;
+	reg rightPaddleDown;
+	
+	always @(posedge CLK) begin
+		if (rightPaddleReset)
+			rightPaddlePos <= 9;
+		else if (rightPaddleUp) begin
+			if (rightPaddlePos > 2)
+				rightPaddlePos <= rightPaddlePos - 1;
+		end
+		else if (rightPaddleDown) begin
+			if (rightPaddlePos < 16)
+				rightPaddlePos <= rightPaddlePos + 1;
+		end
+	end
+	
+	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -183,10 +242,36 @@ module GameProcessor(
 	
 	always @(posedge CLK) begin
 		if (RESET || !ENABLE)
-			state <= 0;
+			state <= 16'h0000;
 		else
 			state <= nextState;
 	end
+	
+	/*
+	* State ID
+	*
+	* 0000: Reset
+	* 0001: Wait for interrupt
+	* 0010: Keyboard interrupt handler
+	* 0020: System timer interrupt handler
+	* 00FF: EOI
+	*
+	* 0xxx: Event loop
+	* 1xxx: Left paddle event handler
+	* 2xxx: Right paddle event handler
+	* 3xxx: Ball event handler
+	* 4xxx: Scorebar event handler
+	* 5xxx: Helpbar event handler
+	* Fxxx: System event handler
+	*
+	* x1xx: Pre-update-event handler
+	* x2xx: Update-event handler
+	* x3xx: Post-update-event handler
+	* x4xx: Draw-event handler
+	*
+	* xxFF: End of event group
+	* 0xEF: Event return pointer
+	*/
 	
 	always @(*) begin
 		addrLine = 16'h0000;
@@ -210,9 +295,21 @@ module GameProcessor(
 		incCounter = 0;
 		decCounter = 0;
 		
+		resetObjectId = 0;
+		incObjectId = 0;
+		decObjectId = 0;
+		
 		resetKeyQueue = 0;
 		pushKeyQueue = 0;
 		popKeyQueue = 0;
+		
+		leftPaddleReset = 0;
+		leftPaddleUp = 0;
+		leftPaddleDown = 0;
+		
+		rightPaddleReset = 0;
+		rightPaddleUp = 0;
+		rightPaddleDown = 0;
 		
 		nextState = 16'hFFFF;
 		
@@ -222,7 +319,10 @@ module GameProcessor(
 			*/
 			16'h0000: begin
 				resetCounter = 1;
+				resetObjectId = 1;
 				resetKeyQueue = 1;
+				leftPaddleReset = 1;
+				rightPaddleReset = 1;
 				nextState = 16'h0001;
 			end
 			
@@ -230,41 +330,312 @@ module GameProcessor(
 			* Wait for interrupt state
 			*/
 			16'h0001: begin
-				if (irq == 1)
-					nextState = 16'h0002;
+				if (irq == 0)
+					nextState = 16'h0020;
+				else if (irq == 1)
+					nextState = 16'h0010;
 				else
 					nextState = 16'h0001;
+			end
+			
+			/**
+			* System timer interrupt handler
+			*/
+			16'h0020: begin
+				iack = 1;
+				nextState = 16'h0100;
+			end
+			
+			/*
+			* Keyboard event handler (pre-object-update)
+			*/
+			16'h0100: begin
+				if (keyQueueFront == keyQueueBack)
+					nextState = 16'h01FF;
+				else
+					nextState = 16'h0101;
+			end
+			
+			16'h0101: begin
+				addrLine = KEYQUEUE_ADDR + keyQueueFront;
+				loadAddr = 1;
+				nextState = 16'h0102;
+			end
+			
+			16'h0102: begin
+				memEnable = 1;
+				memWrite = 0;
+				popKeyQueue = 1;
+				nextState = 16'h0103;
+			end
+			
+			16'h0103: begin
+				loadBufferMem = 1;
+				nextState = 16'h0104;
+			end
+			
+			16'h0104: begin
+				if (buffer[7:0] == 8'h77 || buffer[7:0] == 8'h73)
+					nextState = 16'h1100; // GOTO: left paddle pre-update-event handler
+				else if (buffer[7:0] == 8'h69 || buffer[7:0] == 8'h6B)
+					nextState = 16'h2100; // GOTO: right paddle pre-update-event handler
+				else if (buffer[7:0] == 8'h20)
+					nextState = 16'h3100; // GOTO: ball pre-update-event handler (launch)
+				else
+					nextState = 16'h01EF;
+			end
+			
+			16'h01EF: begin
+				nextState = 16'h0100;
+			end
+			
+			16'h01FF: begin
+				nextState = 16'h0200;
+			end
+			
+			/*
+			* Update-event
+			*/
+			16'h0200: begin
+				nextState = 16'h02FF;
+			end
+			
+			16'h02EF: begin
+				nextState = 16'h0200;
+			end
+			
+			16'h02FF: begin
+				nextState = 16'h0300;
+			end
+			
+			/*
+			* Post-update-event
+			*/
+			16'h0300: begin
+				nextState = 16'h03FF;
+			end
+			
+			16'h03EF: begin
+				nextState = 16'h0300;
+			end
+			
+			16'h03FF: begin
+				nextState = 16'h0400;
+			end
+			
+			/*
+			* Draw-event
+			*/
+			16'h0400: begin
+				if (gpuReady)
+					nextState = 16'h0401;
+				else
+					nextState = 16'h04FF;
+			end
+			
+			16'h0401: begin
+				addrLine = 16'hA000;
+				dataLine = 0;
+				resetCounter = 1;
+				loadAddr = 1;
+				loadBufferLine = 1;
+				nextState = 16'h0402;
+			end
+			
+			16'h0402: begin
+				addrLine = 16'hA000 + counter;
+				loadAddr = 1;
+				if (counter < 16'h0500)
+					nextState = 16'h0403;
+				else
+					nextState = 16'h0410;
+			end
+			
+			16'h0403: begin
+				memEnable = 1;
+				memWrite = 1;
+				incCounter = 1;
+				nextState = 16'h0402;
+			end
+			
+			16'h0410: begin
+				resetObjectId = 1;
+				nextState = 16'h0411;
+			end
+			
+			16'h0411: begin
+				if (objectId == 0)
+					nextState = 16'h1400; // GOTO: left paddle draw-event handler
+				else if (objectId == 1)
+					nextState = 16'h2400; // GOTO: right paddle draw-event handler
+				else
+					nextState = 16'h04DF;
+			end
+			
+			16'h04EF: begin
+				incObjectId = 1;
+				nextState = 16'h0411;
+			end
+			
+			16'h04DF: begin
+				gpuDraw = 1;
+				nextState = 16'h04FF;
+			end
+			
+			16'h04FF: begin
+				nextState = 16'h00FF;
+			end
+			
+			/*
+			* Left paddle event handler
+			*/
+			
+			// Pre-update-event
+			16'h1100: begin
+				if (buffer[7:0] == 8'h77)
+					nextState = 16'h1101;
+				else if (buffer[7:0] == 8'h73)
+					nextState = 16'h1102;
+				else
+					nextState = 16'h01EF;
+			end
+			
+			16'h1101: begin
+				leftPaddleUp = 1;
+				nextState = 16'h01EF;
+			end
+			
+			16'h1102: begin
+				leftPaddleDown = 1;
+				nextState = 16'h01EF;
+			end
+			
+			// Draw-event
+			16'h1400: begin
+				resetCounter = 1;
+				dataLine = 16'h3F00;
+				loadBufferLine = 1;
+				nextState = 16'h1401;
+			end
+			
+			16'h1401: begin
+				addrLine = 16'hA000 + (counter << 6) + 16'h0002;
+				loadAddr = 1;
+				if (counter < 18)
+					nextState = 16'h1402;
+				else
+					nextState = 16'h04EF;
+			end
+			
+			16'h1402: begin
+				if (counter >= (leftPaddlePos - 2) && counter < (leftPaddlePos + 2))
+					nextState = 16'h1403;
+				else
+					nextState = 16'h1404;
+			end
+			
+			16'h1403: begin
+				memEnable = 1;
+				memWrite = 1;
+				nextState = 16'h1404;
+			end
+			
+			16'h1404: begin
+				incCounter = 1;
+				nextState = 16'h1401;
+			end
+			
+			/*
+			* Right paddle event handler
+			*/
+			
+			// Pre-update-event
+			16'h2100: begin
+				if (buffer[7:0] == 8'h69)
+					nextState = 16'h2101;
+				else if (buffer[7:0] == 8'h6B)
+					nextState = 16'h2102;
+				else
+					nextState = 16'h01EF;
+			end
+			
+			16'h2101: begin
+				rightPaddleUp = 1;
+				nextState = 16'h01EF;
+			end
+			
+			16'h2102: begin
+				rightPaddleDown = 1;
+				nextState = 16'h01EF;
+			end
+			
+			// Draw-event
+			16'h2400: begin
+				resetCounter = 1;
+				dataLine = 16'h3F00;
+				loadBufferLine = 1;
+				nextState = 16'h2401;
+			end
+			
+			16'h2401: begin
+				addrLine = 16'hA000 + (counter << 6) + 16'h003D;
+				loadAddr = 1;
+				if (counter < 18)
+					nextState = 16'h2402;
+				else
+					nextState = 16'h04EF;
+			end
+			
+			16'h2402: begin
+				if (counter >= (rightPaddlePos - 2) && counter < (rightPaddlePos + 2))
+					nextState = 16'h2403;
+				else
+					nextState = 16'h2404;
+			end
+			
+			16'h2403: begin
+				memEnable = 1;
+				memWrite = 1;
+				nextState = 16'h2404;
+			end
+			
+			16'h2404: begin
+				incCounter = 1;
+				nextState = 16'h2401;
 			end
 			
 			/*
 			* Keyboard interrupt handler
 			*/
-			16'h0002: begin
+			16'h0010: begin
 				iack = 1;
-				nextState = 16'h0003;
+				nextState = 16'h0011;
 			end
 			
-			16'h0003: begin
+			16'h0011: begin
 				loadKeyBuffer = 1;
-				nextState = 16'h0004;
+				nextState = 16'h0012;
 			end
 			
-			16'h0004: begin
-				dataLine = keyBuffer;
+			16'h0012: begin
+				dataLine[7:0] = keyBuffer;
 				addrLine = KEYQUEUE_ADDR + keyQueueBack;
 				loadBufferLine = 1;
 				loadAddr = 1;
-				nextState = 16'h0005;
+				nextState = 16'h0013;
 			end
 			
-			16'h0005: begin
+			16'h0013: begin
 				memEnable = 1;
 				memWrite = 1;
 				pushKeyQueue = 1;
-				nextState = 16'h0006;
+				nextState = 16'h00FF;
 			end
 			
-			16'h0006: begin
+			/*
+			* End of interrupt
+			*/
+			16'h00FF: begin
 				iend = 1;
 				nextState = 16'h0001;
 			end
