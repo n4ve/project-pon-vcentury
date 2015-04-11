@@ -317,7 +317,7 @@ module TitleProcessor(
 			end
 			
 			26: begin
-				error = 1;
+				pSwitch = 1;
 				nextState = 26;
 			end
 		endcase
