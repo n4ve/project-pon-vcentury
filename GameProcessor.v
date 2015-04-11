@@ -42,6 +42,12 @@ module GameProcessor(
     );
 	
 	/*
+	* Address and data line
+	*/
+	reg [15:0] addrLine;
+	reg [15:0] dataLine;
+	
+	/*
 	* Memory mechanism
 	*/
 	reg memEnable;
@@ -56,12 +62,31 @@ module GameProcessor(
 	assign memDataR = MEM_DATA_R;
 	assign MEM_DATA_W = memDataW;
 	
-	reg resetMemAddr;
+	/*
+	* Memory Address Buffer
+	*/
+	reg loadAddr;
 	
 	always @(posedge CLK) begin
-		if (resetMemAddr)
-			memAddr <= 16'h0000;
+		if (loadAddr)
+			memAddr <= addrLine;
 	end
+	
+	/*
+	* Memory Data Buffer
+	*/
+	reg [15:0] buffer;
+	reg loadBufferMem;
+	reg loadBufferLine;
+	
+	always @(posedge CLK) begin
+		if (loadBufferMem)
+			buffer <= memDataR;
+		else if (loadBufferLine)
+			buffer <= dataLine;
+	end
+	
+	assign memDataW = buffer;
 	
 	/*
 	* Graphic mechanism
@@ -109,22 +134,6 @@ module GameProcessor(
 	assign FATAL_ERROR = error;
 	
 	/*
-	* Memory Data Buffer
-	*/
-	reg [15:0] buffer;
-	reg resetBuffer;
-	reg loadBufferMem;
-	
-	always @(posedge CLK) begin
-		if (resetBuffer)
-			buffer <= 0;
-		else if (loadBufferMem)
-			buffer <= memDataR;
-	end
-	
-	assign memDataW = buffer;
-	
-	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -138,24 +147,27 @@ module GameProcessor(
 	end
 	
 	always @(*) begin
+		addrLine = 16'h0000;
+		dataLine = 16'h0000;
+		
 		memEnable = 0;
 		memWrite = 0;
-		resetMemAddr = 0;
+		
 		gpuDraw = 0;
 		loadKeyBuffer = 0;
 		iack = 0;
 		iend = 0;
 		pSwitch = 0;
 		error = 0;
-		resetBuffer = 0;
+		
+		loadAddr = 0;
 		loadBufferMem = 0;
+		loadBufferLine = 0;
 		
 		nextState = 16'h0000;
 		
 		case (state)
 			16'h0000: begin
-				resetBuffer = 1;
-				resetMemAddr = 1;
 				nextState = 16'h0001;
 			end
 			
