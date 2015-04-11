@@ -1,0 +1,4 @@
+# This file will describe the location of data in the RAM
+
+# 	From	To	Description
+	0800	0CFF	Title screen bitmap
