@@ -250,6 +250,27 @@ module GameProcessor(
 	assign rightPaddleLower = rightPaddlePos + 2;
 	
 	/*
+	* Score counter
+	*/
+	reg [3:0] scoreLeft;
+	reg [3:0] scoreRight;
+	
+	reg resetScore;
+	reg addScoreLeft;
+	reg addScoreRight;
+	
+	always @(posedge CLK) begin
+		if (resetScore) begin
+			scoreLeft <= 0;
+			scoreRight <= 0;
+		end
+		else if (addScoreLeft)
+			scoreLeft <= scoreLeft + 1;
+		else if (addScoreRight)
+			scoreRight <= scoreRight + 1;
+	end
+	
+	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -327,6 +348,10 @@ module GameProcessor(
 		rightPaddleUp = 0;
 		rightPaddleDown = 0;
 		
+		resetScore = 0;
+		addScoreLeft = 0;
+		addScoreRight = 0;
+		
 		nextState = 16'hFFFF;
 		
 		case (state)
@@ -339,6 +364,7 @@ module GameProcessor(
 				resetKeyQueue = 1;
 				leftPaddleReset = 1;
 				rightPaddleReset = 1;
+				resetScore = 1;
 				nextState = 16'h0001;
 			end
 			
