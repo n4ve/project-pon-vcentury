@@ -271,6 +271,38 @@ module GameProcessor(
 	end
 	
 	/*
+	* Flags
+	*/
+	reg [1:0] winnerFlag;
+	reg pauseFlag;
+	
+	reg resetWinner;
+	reg setLeftWin;
+	reg setRightWin;
+	
+	always @(posedge CLK) begin
+		if (resetWinner)
+			winnerFlag <= 2'b00;
+		else if (setLeftWin)
+			winnerFlag <= 2'b01;
+		else if (setRightWin)
+			winnerFlag <= 2'b10;
+	end
+	
+	reg resetPause;
+	reg setPause;
+	
+	always @(posedge CLK) begin
+		if (resetPause)
+			pauseFlag <= 0;
+		else if (setPause)
+			pauseFlag <= 1;
+	end
+	
+	wire gameFreeze;
+	assign gameFreeze = (winnerFlag[0] | winnerFlag[1] | pauseFlag);
+	
+	/*
 	* FSM
 	*/
 	reg [15:0] state;
@@ -352,6 +384,13 @@ module GameProcessor(
 		addScoreLeft = 0;
 		addScoreRight = 0;
 		
+		resetWinner = 0;
+		setLeftWin = 0;
+		setRightWin = 0;
+		
+		resetPause = 0;
+		setPause = 0;
+		
 		nextState = 16'hFFFF;
 		
 		case (state)
@@ -365,6 +404,8 @@ module GameProcessor(
 				leftPaddleReset = 1;
 				rightPaddleReset = 1;
 				resetScore = 1;
+				resetWinner = 1;
+				resetPause = 1;
 				nextState = 16'h0001;
 			end
 			
@@ -417,11 +458,11 @@ module GameProcessor(
 			end
 			
 			16'h0104: begin
-				if (buffer[7:0] == 8'h77 || buffer[7:0] == 8'h73)
+				if ((buffer[7:0] == 8'h77 || buffer[7:0] == 8'h73) && !gameFreeze)
 					nextState = 16'h1100; // GOTO: left paddle pre-update-event handler
-				else if (buffer[7:0] == 8'h69 || buffer[7:0] == 8'h6B)
+				else if ((buffer[7:0] == 8'h69 || buffer[7:0] == 8'h6B) && !gameFreeze)
 					nextState = 16'h2100; // GOTO: right paddle pre-update-event handler
-				else if (buffer[7:0] == 8'h20)
+				else if ((buffer[7:0] == 8'h20) && !gameFreeze)
 					nextState = 16'h3100; // GOTO: ball pre-update-event handler (launch)
 				else
 					nextState = 16'h01EF;
