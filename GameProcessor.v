@@ -198,10 +198,13 @@ module GameProcessor(
 	/*
 	* Left paddle
 	*/
-	reg [5:0] leftPaddlePos;
+	reg [7:0] leftPaddlePos;
 	reg leftPaddleReset;
 	reg leftPaddleUp;
 	reg leftPaddleDown;
+	
+	wire [7:0] leftPaddleUpper;
+	wire [7:0] leftPaddleLower;
 	
 	always @(posedge CLK) begin
 		if (leftPaddleReset)
@@ -216,13 +219,19 @@ module GameProcessor(
 		end
 	end
 	
+	assign leftPaddleUpper = leftPaddlePos - 2;
+	assign leftPaddleLower = leftPaddlePos + 2;
+	
 	/*
 	* Right paddle
 	*/
-	reg [5:0] rightPaddlePos;
+	reg [7:0] rightPaddlePos;
 	reg rightPaddleReset;
 	reg rightPaddleUp;
 	reg rightPaddleDown;
+	
+	wire [7:0] rightPaddleUpper;
+	wire [7:0] rightPaddleLower;
 	
 	always @(posedge CLK) begin
 		if (rightPaddleReset)
@@ -236,6 +245,9 @@ module GameProcessor(
 				rightPaddlePos <= rightPaddlePos + 1;
 		end
 	end
+	
+	assign rightPaddleUpper = rightPaddlePos - 2;
+	assign rightPaddleLower = rightPaddlePos + 2;
 	
 	/*
 	* FSM
@@ -533,7 +545,7 @@ module GameProcessor(
 			end
 			
 			16'h1402: begin
-				if (counter >= (leftPaddlePos - 2) && counter < (leftPaddlePos + 2))
+				if (counter >= leftPaddleUpper && counter < leftPaddleLower)
 					nextState = 16'h1403;
 				else
 					nextState = 16'h1404;
@@ -592,7 +604,7 @@ module GameProcessor(
 			end
 			
 			16'h2402: begin
-				if (counter >= (rightPaddlePos - 2) && counter < (rightPaddlePos + 2))
+				if (counter >= rightPaddleUpper && counter < rightPaddleLower)
 					nextState = 16'h2403;
 				else
 					nextState = 16'h2404;
