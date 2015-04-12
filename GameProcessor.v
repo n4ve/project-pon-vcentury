@@ -33,6 +33,7 @@ module GameProcessor(
 	// Graphic controller
 	input GPU_READY,
 	output GPU_DRAW,
+	output GPU_REQUEST,
 	// Keyboard controller
 	input [7:0] KBD_KEY,
 	// Interrupt controller
@@ -93,9 +94,11 @@ module GameProcessor(
 	*/
 	wire gpuReady;
 	reg gpuDraw;
+	reg gpuRequest;
 	
 	assign gpuReady = GPU_READY;
 	assign GPU_DRAW = gpuDraw;
+	assign GPU_REQUEST = gpuRequest;
 	
 	/*
 	* Keyboard mechanism
@@ -281,6 +284,7 @@ module GameProcessor(
 		memWrite = 0;
 		
 		gpuDraw = 0;
+		gpuRequest = 0;
 		loadKeyBuffer = 0;
 		iack = 0;
 		iend = 0;
@@ -427,10 +431,11 @@ module GameProcessor(
 			* Draw-event
 			*/
 			16'h0400: begin
+				gpuRequest = 1;
 				if (gpuReady)
 					nextState = 16'h0401;
 				else
-					nextState = 16'h04FF;
+					nextState = 16'h0400;
 			end
 			
 			16'h0401: begin

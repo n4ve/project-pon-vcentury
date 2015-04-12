@@ -31,6 +31,7 @@ module GPU(
 	// GPU Signals
 	output SIG_READY,
 	input SIG_DRAW,
+	input SIG_REQUEST,
 	// Frontend
 	output OUT_SERIAL_TX
     );
@@ -68,9 +69,11 @@ module GPU(
 	*/
 	reg gpuReady;
 	wire gpuDraw;
+	wire gpuRequest;
 	
 	assign SIG_READY = gpuReady;
 	assign gpuDraw = SIG_DRAW;
+	assign gpuRequest = SIG_REQUEST;
 	
 	/*
 	* Serial transmitter
@@ -913,7 +916,7 @@ module GPU(
 			*/
 			63: begin
 				incVramAddr = 1;
-				if (vramAddr < 11'h4FF)
+				if (vramAddr < 11'h4FF && !gpuRequest)
 					nextState = 9;
 				else
 					nextState = 64;

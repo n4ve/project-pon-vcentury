@@ -33,6 +33,7 @@ module TitleProcessor(
 	// Graphic controller
 	input GPU_READY,
 	output GPU_DRAW,
+	output GPU_REQUEST,
 	// Keyboard controller
 	input [7:0] KBD_KEY,
 	// Interrupt controller
@@ -77,9 +78,11 @@ module TitleProcessor(
 	*/
 	wire gpuReady;
 	reg gpuDraw;
+	reg gpuRequest;
 	
 	assign gpuReady = GPU_READY;
 	assign GPU_DRAW = gpuDraw;
+	assign GPU_REQUEST = gpuRequest;
 	
 	/*
 	* Keyboard mechanism
@@ -182,6 +185,7 @@ module TitleProcessor(
 		setFrameMemAddr = 0;
 		toggleMemRegion = 0;
 		gpuDraw = 0;
+		gpuRequest = 0;
 		loadKBuffer = 0;
 		iack = 0;
 		iend = 0;
@@ -245,10 +249,11 @@ module TitleProcessor(
 			end
 			
 			4: begin
+				gpuRequest = 1;
 				if (gpuReady)
 					nextState = 5;
 				else
-					nextState = 12;
+					nextState = 4;
 			end
 			
 			5: begin

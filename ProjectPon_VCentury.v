@@ -65,9 +65,10 @@ module ProjectPon_VCentury(
 	*/
 	wire gpuReady;
 	wire gpuDraw; // Processor's signal
+	wire gpuRequest; // Processor's signal
 	
 	GFXController gfxc(CLK, RESET, vramEnable, vramWrite, vramAddr, vramDataR, vramDataW,
-		gpuReady, gpuDraw, OUT_SERIAL_TX);
+		gpuReady, gpuDraw, gpuRequest, OUT_SERIAL_TX);
 	
 	/*
 	* Interrupt controller
@@ -113,13 +114,14 @@ module ProjectPon_VCentury(
 	wire [15:0] p0memAddr;
 	wire [15:0] p0memDataW;
 	wire p0gpuDraw;
+	wire p0gpuRequest;
 	wire p0iack;
 	wire p0iend;
 	
 	TitleProcessor processor0(CLK, RESET,
 		processor0Enable, processor0SwitchRequest, processor0FatalError,
 		p0memEnable, p0memWrite, p0memAddr, memDataR, p0memDataW,
-		gpuReady, p0gpuDraw, kbd, irq, p0iack, p0iend);
+		gpuReady, p0gpuDraw, p0gpuRequest, kbd, irq, p0iack, p0iend);
 	
 	/*
 	* Processor 1 (game processor)
@@ -129,13 +131,14 @@ module ProjectPon_VCentury(
 	wire [15:0] p1memAddr;
 	wire [15:0] p1memDataW;
 	wire p1gpuDraw;
+	wire p1gpuRequest;
 	wire p1iack;
 	wire p1iend;
 	
 	GameProcessor processor1(CLK, RESET,
 		processor1Enable, processor1SwitchRequest, processor1FatalError,
 		p1memEnable, p1memWrite, p1memAddr, memDataR, p1memDataW,
-		gpuReady, p1gpuDraw, kbd, irq, p1iack, p1iend);
+		gpuReady, p1gpuDraw, p1gpuRequest, kbd, irq, p1iack, p1iend);
 	
 	/*
 	* Assignment
@@ -145,6 +148,7 @@ module ProjectPon_VCentury(
 	assign memAddr = (processorId == 1) ? p1memAddr : p0memAddr;
 	assign memDataW = (processorId == 1) ? p1memDataW : p0memDataW;
 	assign gpuDraw = (processorId == 1) ? p1gpuDraw : p0gpuDraw;
+	assign gpuRequest = (processorId == 1) ? p1gpuRequest : p0gpuRequest;
 	assign iack = (processorId == 1) ? p1iack : p0iack;
 	assign iend = (processorId == 1) ? p1iend : p0iend;
 	
