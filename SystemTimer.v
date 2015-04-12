@@ -27,6 +27,7 @@ module SystemTimer(
     );
 	
 	parameter [31:0] CLOCKS_TIMER = 500000;
+	//parameter [31:0] CLOCKS_TIMER = 50000;
 	
 	reg irq;
 	wire iack, iend;
