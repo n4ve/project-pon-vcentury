@@ -250,6 +250,75 @@ module GameProcessor(
 	assign rightPaddleLower = rightPaddlePos + 2;
 	
 	/*
+	* Ball
+	*/
+	reg [7:0] ballX;
+	reg [7:0] ballY;
+	reg ballIx;
+	reg ballIy;
+	reg [3:0] ballVm;
+	reg [1:0] ballStatus; // 0: flying, 1: left paddle, 2: right paddle
+	
+	reg resetBall;
+	reg setBallLeftPaddle;
+	reg setBallRightPaddle;
+	reg launchBall;
+	reg moveBall;
+	reg flipVx;
+	reg flipVy;
+	reg addVm;
+	
+	wire [7:0] ballNewX;
+	wire [7:0] ballNewY;
+	
+	always @(posedge CLK) begin
+		if (resetBall) begin
+			ballX <= 0;
+			ballY <= 0;
+			ballIx <= 0;
+			ballIy <= 0;
+			ballVm <= 0;
+			ballStatus <= 2'b01;
+		end
+		else if (setBallLeftPaddle) begin
+			ballX <= 3;
+			ballY <= leftPaddlePos;
+			ballIx <= 0;
+			ballIy <= 0;
+			ballVm <= 1;
+			ballStatus <= 2'b01;
+		end
+		else if (setBallRightPaddle) begin
+			ballX <= 60;
+			ballY <= rightPaddlePos;
+			ballIx <= 1;
+			ballIy <= 0;
+			ballVm <= 1;
+			ballStatus <= 2'b10;
+		end
+		else if (launchBall) begin
+			ballStatus <= 2'b00;
+		end
+		else if (moveBall) begin
+			ballX <= ballNewX;
+			ballY <= ballNewY;
+		end
+		else if (flipVx) begin
+			ballIx <= ~ballIx;
+		end
+		else if (flipVy) begin
+			ballIy <= ~ballIy;
+		end
+		else if (addVm) begin
+			if (ballVm < 5)
+				ballVm <= ballVm + 1;
+		end
+	end
+	
+	assign ballNewX = (ballIx) ? (ballX - 1) : (ballX + 1);
+	assign ballNewY = (ballIy) ? (ballY - 1) : (ballY + 1);
+	
+	/*
 	* Score counter
 	*/
 	reg [3:0] scoreLeft;
@@ -380,6 +449,15 @@ module GameProcessor(
 		rightPaddleUp = 0;
 		rightPaddleDown = 0;
 		
+		resetBall = 0;
+		setBallLeftPaddle = 0;
+		setBallRightPaddle = 0;
+		launchBall = 0;
+		moveBall = 0;
+		flipVx = 0;
+		flipVy = 0;
+		addVm = 0;
+		
 		resetScore = 0;
 		addScoreLeft = 0;
 		addScoreRight = 0;
@@ -403,6 +481,7 @@ module GameProcessor(
 				resetKeyQueue = 1;
 				leftPaddleReset = 1;
 				rightPaddleReset = 1;
+				resetBall = 1;
 				resetScore = 1;
 				resetWinner = 1;
 				resetPause = 1;
@@ -480,11 +559,11 @@ module GameProcessor(
 			* Update-event
 			*/
 			16'h0200: begin
-				nextState = 16'h02FF;
+				nextState = 16'h3200; // GOTO: ball update-event handler
 			end
 			
 			16'h02EF: begin
-				nextState = 16'h0200;
+				nextState = 16'h02FF;
 			end
 			
 			16'h02FF: begin
@@ -552,6 +631,8 @@ module GameProcessor(
 					nextState = 16'h1400; // GOTO: left paddle draw-event handler
 				else if (objectId == 1)
 					nextState = 16'h2400; // GOTO: right paddle draw-event handler
+				else if (objectId == 2)
+					nextState = 16'h3400; // GOTO: ball draw-event handler
 				else
 					nextState = 16'h04DF;
 			end
@@ -686,6 +767,138 @@ module GameProcessor(
 			16'h2404: begin
 				incCounter = 1;
 				nextState = 16'h2401;
+			end
+			
+			/*
+			* Ball handler
+			*/
+			
+			// Pre-update-event
+			16'h3100: begin
+				launchBall = 1;
+				nextState = 16'h01EF;
+			end
+			
+			// Update-event
+			16'h3200: begin
+				if (ballStatus[0])
+					nextState = 16'h3201;
+				else if (ballStatus[1])
+					nextState = 16'h3202;
+				else
+					nextState = 16'h3210;
+			end
+			
+			16'h3201: begin
+				setBallLeftPaddle = 1;
+				nextState = 16'h02EF;
+			end
+			
+			16'h3202: begin
+				setBallRightPaddle = 1;
+				nextState = 16'h02EF;
+			end
+			
+			16'h3210: begin
+				resetCounter = 1;
+				nextState = 16'h3211;
+			end
+			
+			16'h3211: begin
+				if (counter[3:0] < ballVm)
+					nextState = 16'h3212;
+				else
+					nextState = 16'h32EF;
+			end
+			
+			16'h3212: begin
+				moveBall = 1;
+				nextState = 16'h3220;
+			end
+			
+			16'h3220: begin
+				if (ballNewX == 2 &&
+					ballNewY >= leftPaddleUpper &&
+					ballNewY < leftPaddleLower)
+					nextState = 16'h3221;
+				else if (ballNewX == 61 &&
+					ballNewY >= rightPaddleUpper &&
+					ballNewY < rightPaddleLower)
+					nextState = 16'h3221;
+				else if (ballX == 0 || ballX == 63)
+					nextState = 16'h32EF;
+				else
+					nextState = 16'h3230;
+			end
+			
+			16'h3221: begin
+				flipVx = 1;
+				nextState = 16'h3222;
+			end
+			
+			16'h3222: begin
+				addVm = 1;
+				nextState = 16'h323E;
+			end
+			
+			16'h3230: begin
+				if (ballY == 0 || ballY == 17)
+					nextState = 16'h323F;
+				else
+					nextState = 16'h3240;
+			end
+			
+			16'h323E: begin
+				if (ballY == 0 || ballY == 17)
+					nextState = 16'h323F;
+				else
+					nextState = 16'h32EF;
+			end
+			
+			16'h323F: begin
+				flipVy = 1;
+				nextState = 16'h32EF;
+			end
+			
+			16'h3240: begin
+				incCounter = 1;
+				nextState = 16'h3211;
+			end
+			
+			16'h32EF: begin
+				if (ballX == 0)
+					nextState = 16'h32F1;
+				else if (ballX == 63)
+					nextState = 16'h32F2;
+				else
+					nextState = 16'h02EF;
+			end
+			
+			16'h32F1: begin
+				addScoreRight = 1;
+				setBallLeftPaddle = 1;
+				nextState = 16'h02EF;
+			end
+			
+			16'h32F2: begin
+				addScoreLeft = 1;
+				setBallRightPaddle = 1;
+				nextState = 16'h02EF;
+			end
+			
+			// Draw-event
+			16'h3400: begin
+				addrLine = 16'hA000 + (ballY << 6) + ballX;
+				dataLine = 16'h384F;
+				loadAddr = 1;
+				loadBufferLine = 1;
+				nextState = 16'h3401;
+			end
+			
+			16'h3401: begin
+				memEnable = 1;
+				memWrite = 1;
+				nextState = 16'h04EF;
 			end
 			
 			/*
