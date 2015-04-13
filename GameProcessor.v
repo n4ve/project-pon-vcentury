@@ -328,6 +328,8 @@ module GameProcessor(
 	reg addScoreLeft;
 	reg addScoreRight;
 	
+	parameter [3:0] SCORE_LIMIT = 5;
+	
 	always @(posedge CLK) begin
 		if (resetScore) begin
 			scoreLeft <= 0;
@@ -577,11 +579,14 @@ module GameProcessor(
 			* Post-update-event
 			*/
 			16'h0300: begin
-				nextState = 16'h03FF;
+				if (!gameFreeze)
+					nextState = 16'h4300; // GOTO: scorebar post-update-event handler
+				else
+					nextState = 16'h03EF;
 			end
 			
 			16'h03EF: begin
-				nextState = 16'h0300;
+				nextState = 16'h03FF;
 			end
 			
 			16'h03FF: begin
@@ -902,6 +907,30 @@ module GameProcessor(
 				memEnable = 1;
 				memWrite = 1;
 				nextState = 16'h04EF;
+			end
+			
+			/*
+			* Scorebar handler
+			*/
+			
+			// Post-update-event
+			16'h4300: begin
+				if (scoreLeft >= SCORE_LIMIT)
+					nextState = 16'h4301;
+				else if (scoreRight >= SCORE_LIMIT)
+					nextState = 16'h4302;
+				else
+					nextState = 16'h03EF;
+			end
+			
+			16'h4301: begin
+				setLeftWin = 1;
+				nextState = 16'h03EF;
+			end
+			
+			16'h4302: begin
+				setRightWin = 1;
+				nextState = 16'h03EF;
 			end
 			
 			/*
