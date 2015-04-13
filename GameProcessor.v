@@ -649,6 +649,8 @@ module GameProcessor(
 					nextState = 16'h3400; // GOTO: ball draw-event handler
 				else if (objectId == 3)
 					nextState = 16'h4400; // GOTO: scorebar draw-event handler
+				else if (objectId == 4)
+					nextState = 16'h5400; // GOTO: helpbar draw-event handler
 				else
 					nextState = 16'h04DF;
 			end
@@ -1006,6 +1008,82 @@ module GameProcessor(
 				dataLine = ((winnerFlag[1]) ? 16'h0600 : 16'h3C00) | (16'h0030 + scoreRight);
 				loadBufferLine = 1;
 				nextState = 16'h440F;
+			end
+			
+			/*
+			* Helpbar event handler
+			*/
+			
+			// Draw-event
+			16'h5400: begin
+				resetCounter = 1;
+				nextState = 16'h5401;
+			end
+			
+			16'h5401: begin
+				if (counter < 64)
+					nextState = 16'h540F;
+				else
+					nextState = 16'h04EF;
+			end
+			
+			16'h5402: begin
+				memEnable = 1;
+				memWrite = 0;
+				nextState = 16'h5403;
+			end
+			
+			16'h5403: begin
+				loadBufferMem = 1;
+				nextState = 16'h5404;
+			end
+			
+			16'h5404: begin
+				addrLine = 16'hA4C0 + counter;
+				loadAddr = 1;
+				nextState = 16'h5405;
+			end
+			
+			16'h5405: begin
+				memEnable = 1;
+				memWrite = 1;
+				incCounter = 1;
+				nextState = 16'h5401;
+			end
+			
+			16'h540F: begin
+				if (pauseFlag)
+					nextState = 16'h5411;
+				else if (winnerFlag[0])
+					nextState = 16'h5412;
+				else if (winnerFlag[1])
+					nextState = 16'h5413;
+				else
+					nextState = 16'h5410;
+			end
+			
+			16'h5410: begin
+				addrLine = 16'h0D00 + counter;
+				loadAddr = 1;
+				nextState = 16'h5402;
+			end
+			
+			16'h5411: begin
+				addrLine = 16'h0D40 + counter;
+				loadAddr = 1;
+				nextState = 16'h5402;
+			end
+			
+			16'h5412: begin
+				addrLine = 16'h0D80 + counter;
+				loadAddr = 1;
+				nextState = 16'h5402;
+			end
+			
+			16'h5413: begin
+				addrLine = 16'h0DC0 + counter;
+				loadAddr = 1;
+				nextState = 16'h5402;
 			end
 			
 			/*
