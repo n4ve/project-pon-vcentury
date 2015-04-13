@@ -559,7 +559,10 @@ module GameProcessor(
 			* Update-event
 			*/
 			16'h0200: begin
-				nextState = 16'h3200; // GOTO: ball update-event handler
+				if (!gameFreeze)
+					nextState = 16'h3200; // GOTO: ball update-event handler
+				else
+					nextState = 16'h02EF;
 			end
 			
 			16'h02EF: begin
