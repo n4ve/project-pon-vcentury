@@ -545,6 +545,12 @@ module GameProcessor(
 					nextState = 16'h2100; // GOTO: right paddle pre-update-event handler
 				else if ((buffer[7:0] == 8'h20) && !gameFreeze)
 					nextState = 16'h3100; // GOTO: ball pre-update-event handler (launch)
+				else if ((buffer[7:0] == 8'h70) && !gameFreeze)
+					nextState = 16'hF100; // GOTO: system pre-update-event handler (pause)
+				else if ((buffer[7:0] == 8'h71) && gameFreeze)
+					nextState = 16'hF100; // GOTO: system pre-update-event handler (quit)
+				else if ((buffer[7:0] == 8'h20) && gameFreeze)
+					nextState = 16'hF100; // GOTO: system pre-update-event handler (continue)
 				else
 					nextState = 16'h01EF;
 			end
@@ -934,6 +940,42 @@ module GameProcessor(
 			end
 			
 			/*
+			* System-event handler
+			*/
+			
+			// Pre-update-event handler
+			16'hF100: begin
+				if (buffer[7:0] == 8'h70)
+					nextState = 16'hF101;
+				else if (buffer[7:0] == 8'h71)
+					nextState = 16'hF102;
+				else if (buffer[7:0] == 8'h20 && !(winnerFlag[0] | winnerFlag[1]))
+					nextState = 16'hF103;
+				else if (buffer[7:0] == 8'h20 && (winnerFlag[0] | winnerFlag[1]))
+					nextState = 16'hF104;
+				else
+					nextState = 16'h01EF;
+			end
+			
+			16'hF101: begin
+				setPause = 1;
+				nextState = 16'h01EF;
+			end
+			
+			16'hF102: begin
+				nextState = 16'h0FFF; // send IEND and quit
+			end
+			
+			16'hF103: begin
+				resetPause = 1;
+				nextState = 16'h01EF;
+			end
+			
+			16'hF104: begin
+				nextState = 16'h0FF0; // send IEND and reset
+			end
+			
+			/*
 			* Keyboard interrupt handler
 			*/
 			16'h0010: begin
@@ -967,6 +1009,21 @@ module GameProcessor(
 			16'h00FF: begin
 				iend = 1;
 				nextState = 16'h0001;
+			end
+			
+			16'h0FFF: begin // quit
+				iend = 1;
+				nextState = 16'h0FFE;
+			end
+			
+			16'h0FFE: begin
+				pSwitch = 1;
+				nextState = 16'h0FFE;
+			end
+			
+			16'h0FF0: begin // restart
+				iend = 1;
+				nextState = 16'h0000;
 			end
 			
 			/*
