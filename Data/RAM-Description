@@ -1,4 +1,6 @@
 # This file will describe the location of data in the RAM
 
 # 	From	To	Description
+	0000	000F	Keyboard buffer queue
 	0800	0CFF	Title screen bitmap
+	0D00	0DFF	Helpbar text
