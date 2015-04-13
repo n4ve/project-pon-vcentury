@@ -20,14 +20,12 @@
 //////////////////////////////////////////////////////////////////////////////////
 module SerialReceiver(
     input CLK,
+	input BCLK,
 	input RESET,
     input IN_SERIAL_RX,
     output [7:0] OUT_DATA,
 	output OUT_STATUS_READY
     );
-	
-	wire BCLK;
-	BaudClockGenerator bcg(CLK, RESET, BCLK);
 	
 	reg [7:0] temp;
 	reg resetTemp;

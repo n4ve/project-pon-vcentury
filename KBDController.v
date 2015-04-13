@@ -27,8 +27,9 @@ module KBDController(
 	output INTC_IRQ,
 	input INTC_IACK,
 	input INTC_IEND,
-	// Frontend
-	input IN_SERIAL_RX
+	// Serial frontend
+	input [7:0] SRX_DATA,
+	input SRX_READY
     );
 	
 	/*
@@ -36,7 +37,9 @@ module KBDController(
 	*/
 	wire [7:0] rxData;
 	wire rxReady;
-	SerialReceiver srx(CLK, RESET, IN_SERIAL_RX, rxData, rxReady);
+	
+	assign rxData = SRX_DATA;
+	assign rxReady = SRX_READY;
 	
 	/*
 	* Keybuffer

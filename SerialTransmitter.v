@@ -20,15 +20,13 @@
 //////////////////////////////////////////////////////////////////////////////////
 module SerialTransmitter(
     input CLK,
+	input BCLK,
     input RESET,
     input [7:0] IN_DATA,
     input IN_SEND,
     output OUT_SERIAL_TX,
 	output OUT_STATUS_READY
     );
-
-	wire BCLK;
-	BaudClockGenerator bcg(CLK, RESET, BCLK);
 	
 	reg [7:0] temp;
 	reg resetTemp;

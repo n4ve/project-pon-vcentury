@@ -31,6 +31,21 @@ module ProjectPon_VCentury(
 	assign RESET = ~IN_PB_RESET;
 	
 	/*
+	* Serial interface
+	*/
+	wire BCLK;
+	BaudClockGenerator bcg(CLK, RESET, BCLK);
+	
+	wire [7:0] rxData;
+	wire rxReady;
+	SerialReceiver srx(CLK, BCLK, RESET, IN_SERIAL_RX, rxData, rxReady);
+	
+	wire [7:0] txData;
+	wire txSend;
+	wire txReady;
+	SerialTransmitter stx(CLK, BCLK, RESET, txData, txSend, OUT_SERIAL_TX, txReady);
+	
+	/*
 	* Memory controller
 	*/
 	wire memEnable; // Processor's signal
@@ -68,7 +83,7 @@ module ProjectPon_VCentury(
 	wire gpuRequest; // Processor's signal
 	
 	GFXController gfxc(CLK, RESET, vramEnable, vramWrite, vramAddr, vramDataR, vramDataW,
-		gpuReady, gpuDraw, gpuRequest, OUT_SERIAL_TX);
+		gpuReady, gpuDraw, gpuRequest, txData, txSend, txReady);
 	
 	/*
 	* Interrupt controller
@@ -91,7 +106,7 @@ module ProjectPon_VCentury(
 	* Keyboard controller
 	*/
 	wire [7:0] kbd;
-	KBDController kbdc(CLK, RESET, kbd, pIrq[1], pIack[1], pIend[1], IN_SERIAL_RX);
+	KBDController kbdc(CLK, RESET, kbd, pIrq[1], pIack[1], pIend[1], rxData, rxReady);
 	
 	/*
 	* Processors mechanism

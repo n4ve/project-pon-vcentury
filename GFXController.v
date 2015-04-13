@@ -31,8 +31,10 @@ module GFXController(
 	output SIG_READY,
 	input SIG_DRAW,
 	input SIG_REQUEST,
-	// Frontend
-	output OUT_SERIAL_TX
+	// Serial frontend
+	output [7:0] STX_DATA,
+	output STX_SEND,
+	input STX_READY
     );
 	
 	wire gpuVramEnable;
@@ -44,7 +46,8 @@ module GFXController(
 	
 	GPU gpu(CLK, RESET, gpuVramEnable, gpuVramWrite, gpuVramAddr,
 		gpuVramDataR, gpuVramDataW, gpuVramLock,
-		SIG_READY, SIG_DRAW, SIG_REQUEST, OUT_SERIAL_TX);
+		SIG_READY, SIG_DRAW, SIG_REQUEST,
+		STX_DATA, STX_SEND, STX_READY);
 	
 	wire vramEnable;
 	wire vramWrite;

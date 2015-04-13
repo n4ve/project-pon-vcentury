@@ -32,8 +32,10 @@ module GPU(
 	output SIG_READY,
 	input SIG_DRAW,
 	input SIG_REQUEST,
-	// Frontend
-	output OUT_SERIAL_TX
+	// Serial frontend
+	output [7:0] STX_DATA,
+	output STX_SEND,
+	input STX_READY
     );
 	
 	/*
@@ -81,7 +83,10 @@ module GPU(
 	reg [7:0] txData;
 	reg txSend;
 	wire txReady;
-	SerialTransmitter stx(CLK, RESET, txData, txSend, OUT_SERIAL_TX, txReady);
+	
+	assign STX_DATA = txData;
+	assign STX_SEND = txSend;
+	assign txReady = STX_READY;
 	
 	/*
 	* Address
