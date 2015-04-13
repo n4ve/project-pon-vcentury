@@ -647,6 +647,8 @@ module GameProcessor(
 					nextState = 16'h2400; // GOTO: right paddle draw-event handler
 				else if (objectId == 2)
 					nextState = 16'h3400; // GOTO: ball draw-event handler
+				else if (objectId == 3)
+					nextState = 16'h4400; // GOTO: scorebar draw-event handler
 				else
 					nextState = 16'h04DF;
 			end
@@ -937,6 +939,73 @@ module GameProcessor(
 			16'h4302: begin
 				setRightWin = 1;
 				nextState = 16'h03EF;
+			end
+			
+			// Draw-event
+			16'h4400: begin
+				resetCounter = 1;
+				nextState = 16'h4401;
+			end
+			
+			16'h4401: begin
+				addrLine = 16'hA480 + counter;
+				loadAddr = 1;
+				if (counter < 64)
+					nextState = 16'h4402;
+				else
+					nextState = 16'h04EF;
+			end
+			
+			16'h4402: begin
+				if (counter < 32)
+					nextState = 16'h4410;
+				else
+					nextState = 16'h4420;
+			end
+			
+			16'h440F: begin
+				memEnable = 1;
+				memWrite = 1;
+				incCounter = 1;
+				nextState = 16'h4401;
+			end
+			
+			16'h4410: begin
+				if (counter == 30)
+					nextState = 16'h4412;
+				else
+					nextState = 16'h4411;
+			end
+			
+			16'h4411: begin
+				dataLine = (winnerFlag[0]) ? 16'h0300 : 16'h3900;
+				loadBufferLine = 1;
+				nextState = 16'h440F;
+			end
+			
+			16'h4412: begin
+				dataLine = ((winnerFlag[0]) ? 16'h0300 : 16'h3900) | (16'h0030 + scoreLeft);
+				loadBufferLine = 1;
+				nextState = 16'h440F;
+			end
+			
+			16'h4420: begin
+				if (counter == 33)
+					nextState = 16'h4422;
+				else
+					nextState = 16'h4421;
+			end
+			
+			16'h4421: begin
+				dataLine = (winnerFlag[1]) ? 16'h0600 : 16'h3C00;
+				loadBufferLine = 1;
+				nextState = 16'h440F;
+			end
+			
+			16'h4422: begin
+				dataLine = ((winnerFlag[1]) ? 16'h0600 : 16'h3C00) | (16'h0030 + scoreRight);
+				loadBufferLine = 1;
+				nextState = 16'h440F;
 			end
 			
 			/*
