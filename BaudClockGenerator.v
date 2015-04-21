@@ -28,7 +28,8 @@ module BaudClockGenerator(
 	parameter BAUD_RATE_MULTIPLIER = 1;
 	//parameter BAUD_RATE_MULTIPLIER = 200; // <-- baud rate multiplier for simulation
 	parameter CLOCK_RATE = 25000000;
-	parameter CLOCKS_WAIT = (CLOCK_RATE / (BAUD_RATE * BAUD_RATE_MULTIPLIER)) / 2;
+	parameter CLOCKS_BIAS = 16;
+	parameter CLOCKS_WAIT = ((CLOCK_RATE / (BAUD_RATE * BAUD_RATE_MULTIPLIER)) / 2) - CLOCKS_BIAS;
 	
 	reg [15:0] counter;
 	
