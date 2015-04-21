@@ -258,6 +258,7 @@ module GameProcessor(
 	reg ballIy;
 	reg [3:0] ballVm;
 	reg [1:0] ballStatus; // 0: flying, 1: left paddle, 2: right paddle
+	reg [1:0] ballMove;
 	
 	reg resetBall;
 	reg setBallLeftPaddle;
@@ -267,6 +268,7 @@ module GameProcessor(
 	reg flipVx;
 	reg flipVy;
 	reg addVm;
+	reg incBallMove;
 	
 	wire [7:0] ballNewX;
 	wire [7:0] ballNewY;
@@ -279,6 +281,7 @@ module GameProcessor(
 			ballIy <= 0;
 			ballVm <= 0;
 			ballStatus <= 2'b01;
+			ballMove <= 0;
 		end
 		else if (setBallLeftPaddle) begin
 			ballX <= 3;
@@ -312,6 +315,9 @@ module GameProcessor(
 		else if (addVm) begin
 			if (ballVm < 5)
 				ballVm <= ballVm + 1;
+		end
+		else if (incBallMove) begin
+			ballMove <= ballMove + 1;
 		end
 	end
 	
@@ -459,6 +465,7 @@ module GameProcessor(
 		flipVx = 0;
 		flipVy = 0;
 		addVm = 0;
+		incBallMove = 0;
 		
 		resetScore = 0;
 		addScoreLeft = 0;
@@ -823,7 +830,7 @@ module GameProcessor(
 			end
 			
 			16'h3211: begin
-				if (counter[3:0] < ballVm)
+				if (counter[3:0] < ballVm && ballMove == 2'b11)
 					nextState = 16'h3212;
 				else
 					nextState = 16'h32EF;
@@ -884,6 +891,7 @@ module GameProcessor(
 			end
 			
 			16'h32EF: begin
+				incBallMove = 1;
 				if (ballX == 0)
 					nextState = 16'h32F1;
 				else if (ballX == 63)
