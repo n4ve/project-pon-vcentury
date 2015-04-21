@@ -232,7 +232,7 @@ module TitleProcessor(
 				incCounter = 1;
 				if (counter == 0)
 					nextState = 17;
-				else if (counter < 24)
+				else if (counter < 48)
 					nextState = 4;
 				else
 					nextState = 18;
